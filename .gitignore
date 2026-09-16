@@ -141,3 +141,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# PI-Desktop plugin packages (rebuild them when publishing)
+*.piplug
+
+# OS metadata
+.DS_Store
+Thumbs.db
