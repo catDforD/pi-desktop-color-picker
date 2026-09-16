@@ -1,0 +1,196 @@
+:root {
+  color-scheme: dark;
+  --bg: #181818;
+  --surface: #212121;
+  --surface-hover: color-mix(in oklab, #ffffff 6%, transparent);
+  --fg: #ffffff;
+  --muted: color-mix(in oklab, #ffffff 52%, transparent);
+  --border: color-mix(in oklab, #ffffff 10%, transparent);
+  --accent: #ffffff;
+}
+
+:root[data-base="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f9f9f9;
+  --surface-hover: color-mix(in oklab, #1a1c1f 5%, transparent);
+  --fg: #1a1c1f;
+  --muted: #5d5d5d;
+  --border: color-mix(in oklab, #1a1c1f 10%, transparent);
+  --accent: #1a1c1f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* A panel reserves this band for the host window controls; a docked view is 0px. */
+  padding: var(--pi-plugin-titlebar-height, 0px) 16px 16px;
+  overflow: auto;
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+h2 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 560;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.preview {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.swatch-large {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.values {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.value-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.value-row:last-child {
+  border-bottom: 0;
+}
+
+.value-row:hover {
+  background: var(--surface-hover);
+}
+
+.value-row:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: -2px;
+}
+
+.notation {
+  flex: none;
+  width: 34px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 560;
+  letter-spacing: 0.04em;
+}
+
+.value {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-hint {
+  flex: none;
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.value-row:hover .copy-hint,
+.value-row:focus-visible .copy-hint {
+  opacity: 1;
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.picker-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+input[type="color"] {
+  width: 44px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 6px;
+}
+
+.swatch {
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.swatch[aria-pressed="true"] {
+  border-color: var(--fg);
+  box-shadow: 0 0 0 1px var(--fg);
+}

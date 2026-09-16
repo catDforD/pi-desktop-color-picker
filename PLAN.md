@@ -36,6 +36,7 @@
 | --- | --- |
 | **屏幕像素** | 无权限、无 API。main 上 `desktopCapturer` / `getDisplayMedia` / `display-capture` / `setDisplayMediaRequestHandler` 全部 0 命中;面板的权限处理器只放行 audio-only 的 `media`(配合 `ui.microphone`) |
 | **全屏 / 透明 / 置顶窗口** | 面板窗口形态固定(无边框 + 宿主胶囊),不存在位置、尺寸、透明、置顶、全屏、多窗口能力 |
+| **从命令打开工作面板视图** | 没有 `openView` API,`pi.ui` 只有 `openPanel` / `closePanel`。官方 `pi.terminal` 的 open 命令也只能弹一句"请按 Mod+J 手动选择"。**因此本插件同时声明面板与视图,共用同一个 HTML 入口**——命令与全局快捷键打开的是面板 |
 | **剪贴板写图片** | `pi.clipboard` 只有 `writeText`,没有 `writeImage`;导出只能走文本格式(CSS / JSON / Tailwind 配置) |
 | 色卡 PNG 导出 | 同上,`fs.writeText` 只写文本,没有二进制写入 |
 
@@ -57,18 +58,30 @@
 
 ## 4. 轨道 A:插件本体
 
-### 阶段 0 — 立项与工程约束(0.5 天)
+### 阶段 0 — 立项与工程约束(0.5 天)✅ 已完成
+
+**决策记录(2026-09-16 确认)**
+
+| 决策 | 结论 |
+| --- | --- |
+| 仓库 | `github.com/catDforD/pi-desktop-color-picker`(公开,MIT) |
+| 插件 id | `io.github.catdford.color-picker` |
+| 名称 | 中文「色卡选择器」/ 英文「Color Picker」 |
+| 技术选型 | 纯 JS + 原生 DOM,零构建;需要时再引 esbuild |
+| 一期范围 | 色板浏览 + 取色 + 复制导出;AI 配色与主题生成随后 |
 
 产出:仓库、id、构建与测试策略。
 
-- **插件 id**:建议 `io.github.catdford.color-picker`(第三方惯例;社区作者也用过 `pi.` 前缀)。id 发布后永久稳定——设置、数据、授权、包名都以它为键。
+- **插件 id**:`io.github.catdford.color-picker`。id 发布后永久稳定——设置、数据、授权、包名都以它为键;上架时官方仓库的目录名必须与它逐字一致。
 - **语言与构建**:宿主加载插件时**不编译 TypeScript、不安装依赖**,插件目录内必须是可直接执行的 JS/HTML/CSS。要么直接用 JS,要么自接 esbuild/vite 把产物 build 进目录;第三方库必须 bundle。
 - **面板技术栈**:面板是沙箱 Chromium(无 Node、contextIsolation、sandbox),宿主调用走 `window.pluginBridge.invoke/on`;Node 只在插件主进程可用。
 - **通信边界**:面板直连的通道是固定的一组(`fs.*`、`clipboard.*`、`themes.*`、`net.fetch`、`app.getAppearance` 等);`agent.complete` 不在其中,面板需经转发机制交给插件主进程的 `onPanelInvoke` 再调用。
 - **起步方式**:应用内「插件 → 从模板新建插件」选 `panel-basic`,或 `cp -R plugins/demo.workspace-summary plugins/<id>`(官方仓库模板)。
 - **测试策略**:颜色转换、色阶生成、对比度、导出文案等纯逻辑抽成不依赖宿主的模块,用 `node:test` 写 `.mjs`——官方仓库 `tests/` 就是这个风格(一个插件一个文件)。
 
-### 阶段 1 — 骨架与入口(1-2 天)
+### 阶段 1 — 骨架与入口(1-2 天)🟡 骨架已完成
+
+已完成:`manifest.json`(面板 + 视图 + 命令 + `format` 设置项)、`main.js`(`color-picker.open` 命令打开面板)、`renderer/`(面板与视图共用一个入口,跟随宿主明暗与语言,色值三格式显示与点击复制)、`lib/color.js`(转换与格式化)与 9 条 `node --test` 用例;`pi-plugin check` 通过。**未做:全局快捷键**(等吸色笔一起做,避免为空操作占用系统级加速键),应用内实机加载待验证。
 
 - `manifest.json`:id / name / i18n(必须同时含 `en` 与 `zh-CN`)/ `main` / `engines.piDesktop`
 - `contributes.views` 工作面板视图;`contributes.commands` 命令;`contributes.globalShortcuts` 全局快捷键;`contributes.settings` 设置项

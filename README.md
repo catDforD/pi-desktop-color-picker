@@ -2,9 +2,9 @@
 
 面向前端与设计工作的 PI-Desktop 插件:浏览色板、从图片取色、AI 生成配色,并可直接把配色装成 PI-Desktop 主题。
 
-> **状态:规划阶段,尚未实现。** 开发规划见 [PLAN.md](./PLAN.md)。
+> **状态:阶段 1 骨架已就绪** —— 可加载、可浏览预设色板、可取色并复制色值。完整规划见 [PLAN.md](./PLAN.md)。
 >
-> Planned plugin id: `io.github.catdford.color-picker`(尚未发布,发布前仍可调整)
+> 插件 id:`io.github.catdford.color-picker`(尚未发布)
 
 ## 它解决什么问题
 
@@ -44,6 +44,30 @@
 ## 开发
 
 本地调试:启动 PI-Desktop 开发版,进入「插件 → Load development plugin」选择本目录。插件主进程改动会热重载(新增权限会中断重载并要求重新授权)。
+
+```
+main.js              插件入口(主进程,CommonJS),注册命令
+renderer/            面板 / 工作面板视图共用的界面(沙箱页面,走 window.pluginBridge)
+lib/color.js         颜色计算,浏览器与 node 都能加载(浏览器里是 classic script:
+                     file:// 源不允许 ES module)
+tests/               node --test 用例
+```
+
+跑测试:
+
+```bash
+node --test
+```
+
+打包与校验(需要 PI-Desktop 仓库里的 devkit):
+
+```bash
+node <PI-Desktop>/packages/plugin-devkit/dist/cli.js check .
+```
+
+> 注意:`check` 会报一条 `permission.unused: clipboard.write ... main.js never calls
+> clipboard.writeText`。这是静态检查只读 `main.js` 导致的误报——本插件的剪贴板写入发生在
+> 面板里(`renderer/app.js` 经 `window.pluginBridge` 调用),这是宿主给面板设计的正常通道。
 
 ## English
 

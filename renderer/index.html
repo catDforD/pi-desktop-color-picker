@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="pi-plugin-chrome" content="v2" />
+    <title>色卡选择器</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="stack">
+      <section class="preview" aria-labelledby="preview-label">
+        <div class="swatch-large" id="preview"></div>
+        <div class="preview-meta">
+          <h2 id="preview-label" data-label="preview">当前颜色</h2>
+          <p class="hint" data-label="copyHint"></p>
+        </div>
+      </section>
+
+      <section class="values" aria-label="Color values">
+        <button class="value-row" type="button" data-notation="hex">
+          <span class="notation">HEX</span>
+          <span class="value" id="value-hex"></span>
+          <span class="copy-hint" data-label="copy"></span>
+        </button>
+        <button class="value-row" type="button" data-notation="rgb">
+          <span class="notation">RGB</span>
+          <span class="value" id="value-rgb"></span>
+          <span class="copy-hint" data-label="copy"></span>
+        </button>
+        <button class="value-row" type="button" data-notation="hsl">
+          <span class="notation">HSL</span>
+          <span class="value" id="value-hsl"></span>
+          <span class="copy-hint" data-label="copy"></span>
+        </button>
+      </section>
+
+      <section class="picker" aria-labelledby="picker-label">
+        <label class="picker-label" id="picker-label" for="native-picker" data-label="pick"></label>
+        <input id="native-picker" type="color" value="#3b82f6" />
+      </section>
+
+      <section class="palette" aria-labelledby="palette-label">
+        <h3 id="palette-label" data-label="swatches"></h3>
+        <div class="swatch-grid" id="swatch-grid"></div>
+      </section>
+    </main>
+
+    <script src="../lib/color.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

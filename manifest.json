@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.catdford.color-picker",
+  "name": "色卡选择器",
+  "version": "0.1.0",
+  "description": "在工作面板里浏览色板、取色并复制色值，后续版本会加入从图片和剪贴板取色、AI 配色，以及一键把配色装成 PI-Desktop 主题。",
+  "i18n": {
+    "en": {
+      "name": "Color Picker",
+      "description": "Browse palettes and copy color values from the work panel. Later versions add picking colors from images and the clipboard, AI-generated schemes, and installing the result as a PI-Desktop theme.",
+      "safetyNotes": "No network access, no file writes, no background service. The plugin only writes to the clipboard (copying a color value) and reads the settings the host stores for it. Colors are computed locally in the panel."
+    },
+    "zh-CN": {
+      "name": "色卡选择器",
+      "description": "在工作面板里浏览色板、取色并复制色值，后续版本会加入从图片和剪贴板取色、AI 配色，以及一键把配色装成 PI-Desktop 主题。",
+      "safetyNotes": "不访问网络、不写入文件、无常驻后台服务。插件只写剪贴板（复制色值）并读取宿主为它保存的设置，全部颜色计算都在面板本地完成。"
+    }
+  },
+  "author": "catDforD",
+  "repository": "https://github.com/catDforD/pi-desktop-color-picker",
+  "categories": ["design", "productivity"],
+  "main": "main.js",
+  "ui": {
+    "panel": "renderer/index.html",
+    "width": 400,
+    "height": 640,
+    "title": {
+      "en": "Color Picker",
+      "zh-CN": "色卡选择器"
+    }
+  },
+  "contributes": {
+    "views": [
+      {
+        "id": "palette",
+        "title": {
+          "en": "Color Picker",
+          "zh-CN": "色卡选择器"
+        },
+        "icon": "palette",
+        "entry": "renderer/index.html",
+        "order": 60
+      }
+    ],
+    "commands": [
+      {
+        "id": "color-picker.open",
+        "title": "Color Picker: Open",
+        "keywords": [
+          "color",
+          "picker",
+          "palette",
+          "swatch",
+          "hex",
+          "rgb",
+          "hsl",
+          "色卡",
+          "取色",
+          "配色",
+          "颜色"
+        ],
+        "category": "Design"
+      }
+    ],
+    "settings": [
+      {
+        "key": "format",
+        "title": "Copy format",
+        "description": "Notation used when copying the current color.",
+        "type": "select",
+        "default": "hex",
+        "enum": [
+          { "label": "HEX", "value": "hex" },
+          { "label": "RGB", "value": "rgb" },
+          { "label": "HSL", "value": "hsl" }
+        ]
+      }
+    ]
+  },
+  "permissions": ["ui.panel", "ui.view", "clipboard.write"],
+  "engines": {
+    "piDesktop": ">=0.9.0"
+  },
+  "activationEvents": ["onCommand:color-picker.open", "onStartup"]
+}
