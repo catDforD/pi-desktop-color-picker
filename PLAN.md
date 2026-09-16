@@ -1,6 +1,6 @@
 # 色卡选择器插件 — 开发规划
 
-> 状态:规划阶段(尚未开工)
+> 状态:阶段 0-2 已完成(阶段 2 连同面板接线一并落地)
 > 最后更新:2026-09-16
 
 ## 1. 背景
@@ -81,7 +81,7 @@
 
 ### 阶段 1 — 骨架与入口(1-2 天)🟡 骨架已完成
 
-已完成:`manifest.json`(面板 + 视图 + 命令 + `format` 设置项)、`main.js`(`color-picker.open` 命令打开面板)、`renderer/`(面板与视图共用一个入口,跟随宿主明暗与语言,色值三格式显示与点击复制)、`lib/color.js`(转换与格式化)与 9 条 `node --test` 用例;`pi-plugin check` 通过。**未做:全局快捷键**(等吸色笔一起做,避免为空操作占用系统级加速键),应用内实机加载待验证。
+已完成:`manifest.json`(面板 + 视图 + 命令 + `format` 设置项)、`main.js`(`color-picker.open` 命令打开面板)、`renderer/`(面板与视图共用一个入口,跟随宿主明暗与语言,色值显示与点击复制,阶段 2 起扩展为四标签页)、`lib/color.js`(转换与格式化)与单元测试(阶段 2 起 46 条);`pi-plugin check` 通过。**未做:全局快捷键**(等吸色笔一起做,避免为空操作占用系统级加速键),应用内实机加载待验证。
 
 - `manifest.json`:id / name / i18n(必须同时含 `en` 与 `zh-CN`)/ `main` / `engines.piDesktop`
 - `contributes.views` 工作面板视图;`contributes.commands` 命令;`contributes.globalShortcuts` 全局快捷键;`contributes.settings` 设置项
@@ -92,15 +92,32 @@
 
 完成标准:`Load development plugin` 可加载;面板能在工作面板打开;改名改色即时热重载;日志按 pluginId 可见。
 
-### 阶段 2 — 色彩数据与算法(3-5 天,纯逻辑)
+### 阶段 2 — 色彩数据与算法(3-5 天,纯逻辑)✅ 已完成(含面板接线)
 
-- Tailwind 全系色板、Material 色系、预设配色、渐变的静态数据(注意包体积)
-- 颜色转换与格式化:HEX / RGB / HSL(建议加 OKLCH)
-- 色阶生成(50~950)、和谐规则(互补 / 类似 / 三角 / 分裂互补)
-- WCAG 对比度检查,可选色盲模拟
-- 导出:CSS 变量、Tailwind 配置片段、JSON
+**决策记录(2026-09-16 确认)**
 
-完成标准:单测齐全,含边界用例(纯黑纯白、极值、舍入)。
+| 决策 | 结论 |
+| --- | --- |
+| Tailwind 数据 | 取 v4 规范值(oklch 字符串),pin `tailwindcss@4.3.3`,共 26 色系 × 11 档 + 黑/白 |
+| Material 数据 | 取经典 2014 色板,pin `material-colors@1.2.6`(ISC),19 色系,色系含 A100/A200/A400/A700 |
+| 数据生成方式 | `tools/gen-palettes.mjs` 从 npm 取固定版本包抽取,产物提交进仓库;运行时零依赖、不联网 |
+| 预设与渐变 | 本仓库手工维护(15 套配色 + 12 条渐变),不引入第三方数据集 |
+| 超色域处理 | 按 Blink 实际行为逐通道裁剪,不做 CSS Color 4 §13.2 降 chroma 映射 |
+| 交付范围 | 逻辑 + 面板接线:四个标签页(色板 / 配色 / 对比度 / 导出),做出可演示版本 |
+
+已完成:
+
+- `lib/data/` 三份数据:Tailwind v4(286 档色值,保留官方 oklch 原值)、Material(254 档)、预设配色与渐变
+- `lib/color.js` 扩展:OKLab/OKLCH ↔ sRGB、`rgb()` / `hsl()` / `oklch()` 字符串解析(含 CSS `none` 分量)、oklch 输出格式;原有的 HEX/RGB/HSL 行为不变
+- `lib/generate.js`:色阶生成(500 档精确等于基色,明度单调、色相保持)与四条和谐规则
+- `lib/contrast.js`:WCAG 相对亮度/对比度/AA-AAA 分级/最佳文字色,以及三型色盲模拟(Machado 2009)
+- `lib/export.js`:CSS 变量、Tailwind v4 `@theme`、Tailwind v3 配置、JSON
+- 面板接线:`renderer/` 改为「头部常驻当前色 + 色板/配色/对比度/导出」四标签页;`manifest.json` 升到 0.2.0、`format` 设置项增加 OKLCH;全程未新增权限
+- 测试:46 条 `node --test` 用例,覆盖数据完整性、转换黄金值、色阶不变量、对比度阈值、导出确定性与边界输入
+
+**转换正确性的验证方式**:用无头 Chromium 144(与面板同为 Blink 内核)对全部 288 个 Tailwind 色值做像素级回读比对——280 个逐位一致,8 个单通道差 1(舍入边界,两个方向都有);超色域颜色的处理据此定为裁剪。这些黄金值固化在 `tests/oklch.test.js` 里。
+
+完成标准:单测齐全,含边界用例(纯黑纯白、极值、舍入)。✅
 
 ### 阶段 3 — 取色与放大镜组件(3-5 天)
 
