@@ -10,10 +10,10 @@
   <body>
     <main class="stack">
       <section class="preview" aria-labelledby="preview-label">
-        <div class="swatch-large" id="preview"></div>
+        <button class="swatch-large" id="preview" type="button"></button>
         <div class="preview-meta">
           <h2 id="preview-label" data-label="preview">当前颜色</h2>
-          <p class="hint" data-label="copyHint"></p>
+          <p class="hint" id="preview-hint"></p>
         </div>
       </section>
 
@@ -33,6 +33,11 @@
           <span class="value" id="value-hsl"></span>
           <span class="copy-hint" data-label="copy"></span>
         </button>
+        <button class="value-row" type="button" data-notation="oklch">
+          <span class="notation">OKLCH</span>
+          <span class="value" id="value-oklch"></span>
+          <span class="copy-hint" data-label="copy"></span>
+        </button>
       </section>
 
       <section class="picker" aria-labelledby="picker-label">
@@ -40,13 +45,53 @@
         <input id="native-picker" type="color" value="#3b82f6" />
       </section>
 
-      <section class="palette" aria-labelledby="palette-label">
-        <h3 id="palette-label" data-label="swatches"></h3>
-        <div class="swatch-grid" id="swatch-grid"></div>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab" id="tab-palettes" type="button" role="tab" aria-selected="true" aria-controls="panel-palettes" data-tab="palettes" data-label="tabPalettes"></button>
+        <button class="tab" id="tab-harmony" type="button" role="tab" aria-selected="false" aria-controls="panel-harmony" data-tab="harmony" data-label="tabHarmony"></button>
+        <button class="tab" id="tab-contrast" type="button" role="tab" aria-selected="false" aria-controls="panel-contrast" data-tab="contrast" data-label="tabContrast"></button>
+        <button class="tab" id="tab-export" type="button" role="tab" aria-selected="false" aria-controls="panel-export" data-tab="export" data-label="tabExport"></button>
+      </nav>
+
+      <section class="panel" id="panel-palettes" role="tabpanel" aria-labelledby="tab-palettes">
+        <div class="segmented" id="source-tabs" role="tablist" aria-label="Palette source"></div>
+        <div class="palette-body" id="palette-body"></div>
+      </section>
+
+      <section class="panel" id="panel-harmony" role="tabpanel" aria-labelledby="tab-harmony" hidden>
+        <h3 data-label="shadesTitle"></h3>
+        <div id="shade-row"></div>
+        <div id="harmony-body"></div>
+      </section>
+
+      <section class="panel" id="panel-contrast" role="tabpanel" aria-labelledby="tab-contrast" hidden>
+        <h3 data-label="contrastTitle"></h3>
+        <div class="values" id="contrast-body"></div>
+        <h3 data-label="cvdTitle"></h3>
+        <div class="cvd-row" id="cvd-body"></div>
+      </section>
+
+      <section class="panel" id="panel-export" role="tabpanel" aria-labelledby="tab-export" hidden>
+        <label class="field">
+          <span data-label="exportScope"></span>
+          <select id="export-scope"></select>
+        </label>
+        <label class="field">
+          <span data-label="exportFormat"></span>
+          <select id="export-format"></select>
+        </label>
+        <pre class="code" id="export-preview"></pre>
+        <button class="action" id="export-copy" type="button" data-label="copyExport"></button>
       </section>
     </main>
 
     <script src="../lib/color.js"></script>
+    <script src="../lib/data/tailwind.js"></script>
+    <script src="../lib/data/material.js"></script>
+    <script src="../lib/data/presets.js"></script>
+    <script src="../lib/palette.js"></script>
+    <script src="../lib/generate.js"></script>
+    <script src="../lib/contrast.js"></script>
+    <script src="../lib/export.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

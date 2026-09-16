@@ -75,6 +75,13 @@ h3 {
   flex: none;
   border-radius: 12px;
   border: 1px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch-large:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: 2px;
 }
 
 .values {
@@ -116,7 +123,7 @@ h3 {
 
 .notation {
   flex: none;
-  width: 34px;
+  width: 46px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 560;
@@ -171,18 +178,184 @@ input[type="color"] {
   cursor: pointer;
 }
 
-.swatch-grid {
+/* Chromium paints the swatch inside its own padded wrapper, which reads as a
+   small block floating in a frame. Strip that so the color fills the control
+   edge to edge; the inner radius is the outer one minus the 1px border. */
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: 7px;
+}
+
+/* --- tabs ---------------------------------------------------------------- */
+
+.tabs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.tab {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.tab[aria-selected="true"] {
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  color: var(--fg);
+  font-weight: 560;
+}
+
+.tab:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: -2px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* The four source chips must fit on one line at the panel's default width
+   (400px → 368px of content), in both languages. They never wrap; if a narrow
+   panel or a wider font makes them overflow, the label ellipsizes instead. */
+.segmented {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+}
+
+.segment {
+  flex: 0 1 auto;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.segment:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.segment[aria-selected="true"] {
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  color: var(--fg);
+}
+
+.segment:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: 1px;
+}
+
+/* --- palette rows -------------------------------------------------------- */
+
+.palette-body {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
+.ramp {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.ramp-label {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ramp-swatches {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ramp-gap {
+  flex: none;
+  width: 6px;
+}
+
 .swatch {
-  aspect-ratio: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  /* Caps rows that hold few colors (black/white, presets) so they stay chips
+     instead of growing into squares; 11–14 stop ramps fill the row first. */
+  max-width: 40px;
+  height: 30px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0;
   cursor: pointer;
+}
+
+.gradient-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gradient-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gradient-bar {
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.gradient-stops {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.gradient-stops .swatch {
+  flex: none;
+  width: 22px;
+  height: 22px;
 }
 
 .swatch:focus-visible {
@@ -193,4 +366,181 @@ input[type="color"] {
 .swatch[aria-pressed="true"] {
   border-color: var(--fg);
   box-shadow: 0 0 0 1px var(--fg);
+}
+
+.link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.link-button:hover {
+  color: var(--fg);
+}
+
+/* --- contrast ------------------------------------------------------------ */
+
+.pair-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pair-row:last-child {
+  border-bottom: 0;
+}
+
+.pair-chip {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.pair-label {
+  font-size: 12px;
+}
+
+.ratio {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.grades {
+  display: flex;
+  gap: 4px;
+}
+
+.grade {
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 560;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.grade[data-pass="true"] {
+  border-color: color-mix(in oklab, #22c55e 55%, transparent);
+  color: #4ade80;
+}
+
+:root[data-base="light"] .grade[data-pass="true"] {
+  color: #15803d;
+}
+
+.sample {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.cvd-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cvd-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.cvd-swatch {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cvd-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.cvd-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* --- export -------------------------------------------------------------- */
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.field select {
+  flex: none;
+  max-width: 62%;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+}
+
+.code {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.action {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 560;
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--surface-hover);
+}
+
+.action:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: 1px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 12px;
 }
