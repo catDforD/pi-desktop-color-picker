@@ -145,6 +145,9 @@ vite.config.ts.timestamp-*
 # PI-Desktop plugin packages (rebuild them when publishing)
 *.piplug
 
+# Agent workspace metadata
+.zcode/
+
 # OS metadata
 .DS_Store
 Thumbs.db
