@@ -2,6 +2,7 @@
 
 > 状态:阶段 0-5 已完成(阶段 2 含面板接线,阶段 3 含取色覆盖层,阶段 4 含 Agent 集成,阶段 5 含宿主主题);阶段 6(上架)未开工;**二期屏幕取色已定型为宿主一次性截图方案,等待宿主提供 `screen.capture`**
 > 最后更新:2026-09-17
+> **0.4.1(首个上架版本)把全局快捷键移出了 manifest**——它的权限没进任何发布版,插件中心按审计规则 MAN013 拦住提交;详见阶段 1 末尾的「0.4.1 处理」
 
 ## 1. 背景
 
@@ -88,6 +89,15 @@
 ⚠️ **运行宿主必须晚于宿主 PR #409**:`keyboard.globalShortcut` 权限与 `contributes.globalShortcuts` 由该 PR 引入(plan 的 §2 早已注明本地旧检出没有)。本机 `PI-Desktop-worktrees/settings-select-controls` 就早于它——插件在那里能正常加载、只是快捷键不生效(日志会记 `UNSUPPORTED`);要真正生效需要从 main 起的构建。
 
 **待实机验证**:快捷键能唤起面板;重新授权后目录选择器能打开;AI 生成能拿到真实模型的返回。
+
+**0.4.1 处理(2026-09-17):该功能已从 manifest 移除。** 插件中心的权限目录是按发布版对齐的:`ui.theme` 因为 v0.10.0 就有所以放行,而 `keyboard.globalShortcut` 随 PR #409 落地于 9-15、至今没进任何发布版,于是被判为未知权限(MAN013)并阻断提交。更要紧的是同一件事的另一面:**任何可安装的宿主都给不出这个权限**,所以市场用户拿到的会是一个在 100% 目标环境里都不可用的功能。0.4.1 因此移除了权限声明、`contributes.globalShortcuts` 与 `main.js` 里的注册代码;命令面板打开面板的路径不受影响。
+
+**恢复步骤(宿主发布 PR #409 之后)**:
+1. `manifest.json`:加回 `keyboard.globalShortcut` 权限与 `contributes.globalShortcuts` 块(写法见 commit `3005ade`)。
+2. `main.js`:`git show v0.4.0:main.js` 取回 `SHORTCUT_CANDIDATES`、`registerGlobalShortcut()` 与 `onLoad` 里的那一行调用。
+3. `tests/plugin-main.test.js`:`git show v0.4.0:tests/plugin-main.test.js` 取回两条快捷键用例与假宿主的 keyboard 桩。
+4. 文档:把 README 的「打开面板」、`docs/permissions.md` 的权限表与限制、TESTING 第 1 节改回快捷键口径。
+5. 版本升位(then re-pack and re-submit)。
 
 - `manifest.json`:id / name / i18n(必须同时含 `en` 与 `zh-CN`)/ `main` / `engines.piDesktop`
 - `contributes.views` 工作面板视图;`contributes.commands` 命令;`contributes.globalShortcuts` 全局快捷键;`contributes.settings` 设置项
@@ -217,7 +227,7 @@
 - [ ] `hideHostWindow` 用默认值(true);取消/拒绝返回 `null` 时保持当前色并提示"已取消"
 - [ ] 负路径文案:宿主不支持该通道 / 权限未授 / 采集被系统拒绝(macOS 屏幕录制)/ 多显示器选择
 - [ ] 测试:`tests/pick.test.js` 补"截图来源"的纯逻辑;假 bridge 环境里端到端跑一遍(用一张现成 PNG 冒充截图)
-- [ ] 若宿主同时开放"命令触发也能采集",再加一条可改绑的快捷键「立即屏幕取色」(当前 `Alt+Shift+C` 只负责开面板)
+- [ ] 若宿主同时开放"命令触发也能采集",再加一条可改绑的快捷键「立即屏幕取色」(注意:0.4.1 起连唤起面板的全局快捷键都不在 manifest 里,见阶段 1 的「0.4.1 处理」)
 
 ## 6. 关键路径与风险
 
@@ -243,8 +253,8 @@
 - **取色**:打开文件夹里的图片,或直接用剪贴板历史里的最新图片;放大镜给出真实像素(像素网格 + 十字准星 + 实时色值),方向键 1px 微调(Shift 一次 10px),点击取色
 - **AI 配色**:给一个主色或一句风格描述,生成整套带名字的配色;模型在面板里选,凭据由宿主解析,插件碰不到
 - **一键复制**:HEX / RGB / HSL / OKLCH、CSS 变量、Tailwind v4 `@theme`、Tailwind v3 配置、JSON
-- **生成并一键换主题**:配色满意后一键装成 PI-Desktop 主题,侧栏 / 编辑器 / 设置页一起换色,可随时切换或卸载(用 ADR 0260 的 `pi.themes.upsert` + `pi.app.setTheme`,不需要新增宿主能力)
-- 清单之外还有:和谐配色与 50–950 色阶生成、WCAG 对比度与三种色盲模拟、`suggest_palette` 工具 + skill、`Alt+Shift+C` 全局快捷键
+- **生成并一键换主题**:配色满意后一键装成 PI-Desktop 主题,侧栏 / 编辑器 / 设置页一起换色,可随时切换或卸载(用 ADR 0260 的 `pi.themes.upsert` + `pi.app.setTheme`,不需要新增宿主能力;这两个 API 目前还没进发布版,旧宿主上这一块会自己降级并提示)
+- 清单之外还有:和谐配色与 50–950 色阶生成、WCAG 对比度与三种色盲模拟、`suggest_palette` 工具 + skill
 
 ## 还需要宿主开放的能力(只剩一项)
 
@@ -294,7 +304,7 @@ pi.screen.capture(input?: {
 
 确认设计后,宿主侧我可以自己实现并提 PR:参照 PR #409 的形状(模块不 import electron、依赖注入以便单测),同步 SDK / Rust 校验 / devkit / 渲染层风险映射 / 八语言文案 / 规范四篇 + zh-CN 镜像 / decisions-log,并按仓库规范跑完整验证。插件侧接上去,是启用现在置灰的「屏幕取色」来源位、复用已有的取色管线,并补齐负路径文案与测试。
 
-最后附上插件当前声明的权限清单,方便评估这个插件的授权面:`ui.panel`、`ui.view`、`ui.theme`、`clipboard.write`、`clipboard.read`、`fs.read`(root 为 `userSelected`,不申报 workspace 范围也没有写权限)、`keyboard.globalShortcut`、`agent.complete`、`models.list`、`agent.tool.register`、`agent.prompt.inject`。
+最后附上插件当前声明的权限清单,方便评估这个插件的授权面:`ui.panel`、`ui.view`、`ui.theme`、`clipboard.write`、`clipboard.read`、`fs.read`(root 为 `userSelected`,不申报 workspace 范围也没有写权限)、`agent.complete`、`models.list`、`agent.tool.register`、`agent.prompt.inject`。全局快捷键用的 `keyboard.globalShortcut` 已从这个版本摘掉:它同样随 PR #409 落地、未进发布版,声明了也无处可授;宿主发布后我会连同这项一起补回来。
 ```
 ## 附录 B:参考坐标
 

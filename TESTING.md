@@ -1,9 +1,9 @@
-# 手工验收清单（0.4.0）
+# 手工验收清单（0.4.1）
 
-本清单对应四个功能：全局快捷键、图片/剪贴板取色、AI 配色与 Agent 集成、PI-Desktop 主题。
+本清单对应四个功能：图片/剪贴板取色、AI 配色与 Agent 集成、PI-Desktop 主题,以及**当前版本不适用**的全局快捷键（0.4.1 起摘除,原因见第 1 节）。
 每项都写了**预期结果**和**不对时看哪里**。逐项打勾即可。
 
-> 自动化部分（108 条 `node --test`、devkit `check`、无头 Chromium 交互、宿主真消毒器、级联探针）
+> 自动化部分（107 条 `node --test`、devkit `check`、无头 Chromium 交互、宿主真消毒器、级联探针）
 > 已在开发侧跑通；本清单只覆盖**必须由真机宿主确认**的部分。
 
 ---
@@ -13,7 +13,7 @@
 - [ ] **确认宿主加载的目录**：宿主里打开插件详情，看它记录的路径；也可以直接读
       `~/.pi-desktop/plugins/registry.json`，其中 `path` 字段是宿主记忆的加载位置。
       注意：开发插件是按原路径加载的，宿主不会复制副本（`plugins/cache/` 里只有下载缓存）。
-- [ ] **确认版本是 0.4.0**：插件列表应显示 `0.4.0`。或看导出页底部有没有
+- [ ] **确认版本是 0.4.1**：插件列表应显示 `0.4.1`。或看导出页底部有没有
       「PI-Desktop 主题」区块——那是 0.4.0 的标志。
 - [ ] **确认宿主够新**：`pi.themes` / `pi.app.setTheme`（ADR 0260）**还没进任何发布版**，
       所以要跑**从 main 起的构建**（本机 `/home/gargantua/code/PI-Desktop` 检出就是）。
@@ -35,26 +35,14 @@
 
 ---
 
-## 1. 全局快捷键
+## 1. 全局快捷键 —— 0.4.1 起不再随版本发布（跳过本节）
 
-- [ ] 切到别的应用（浏览器、编辑器都行），按 `Alt+Shift+C`。
-      **预期**：色卡选择器的**独立面板窗**弹出来。
-      （命令打不开工作面板视图——宿主没有 `openView` API，所以快捷键唤起的是面板窗，这是设计如此。）
-- [ ] 打开宿主的插件设置，确认能看见这条插件快捷键并可以改绑。
-- [ ] 换一个键再试一次（在宿主里改绑后，按新键应能唤起）。
+`Alt+Shift+C` 需要 `keyboard.globalShortcut`，而该权限随宿主 PR #409 落地、至今没进任何发布版：插件中心按未知权限拦住了提交（MAN013），任何可安装的宿主也给不出这个权限。所以 0.4.1 把它从 manifest 里摘掉了，**这一节现在只适用于宿主发布之后**；恢复步骤见 [PLAN.md](./PLAN.md) 阶段 1 的「0.4.1 处理」。
 
-**不对时看日志**（按 pluginId 过滤 `color-picker`）：
+- [ ] 现在能做的替代验证：命令面板里执行「Color Picker: Open」，
+      **预期**：弹出**独立面板窗**（命令打不开工作面板视图——宿主没有 `openView` API，这是设计如此）。
 
-| 日志 | 含义 |
-| --- | --- |
-| `Alt+Shift+C was refused, using Ctrl+Alt+C` | 首选键被占，已自动降级并生效（按 `Ctrl+Alt+C` 试） |
-| `shortcut Alt+Shift+C refused: SHORTCUT_CONFLICT` | 三个候选都被占/被系统保留 |
-| `shortcut ... failed: UNSUPPORTED` | **宿主太旧，没有全局快捷键能力**——见下方说明 |
-| `no global shortcut could be registered` | 三个候选全部失败 |
-
-> ⚠️ **已知前提**：`keyboard.globalShortcut` 与 `contributes.globalShortcuts` 来自宿主 PR #409 之后的版本。
-> 本机 `PI-Desktop-worktrees/settings-select-controls` 早于它——插件在那里能正常加载，
-> 只是快捷键不生效（日志会出现 `UNSUPPORTED`）。要生效需要跑**从 main 起的构建**。
+宿主发布 PR #409 之后，本节恢复为原来的三件事：切到别的应用按 `Alt+Shift+C` 能唤起面板、插件设置里能看到并改绑这条快捷键、换键后新键生效。日志里若出现 `was refused, using Ctrl+Alt+C` 表示首选键被占已自动降级，`refused: SHORTCUT_CONFLICT` 表示三个候选都被占，`failed: UNSUPPORTED` 表示宿主太旧。
 
 ---
 
@@ -218,6 +206,6 @@
 如果某一项没通过，请给我这三样，我能直接定位：
 
 1. **宿主构建**：是从 main 起的构建，还是那份 `settings-select-controls` worktree？
-   （同时决定快捷键与主题能不能工作：前者要 PR #409 之后，后者要 ADR 0260 之后。）
+   （主题能不能工作取决于宿主是否已含 ADR 0260；全局快捷键在 0.4.1 里已摘除，见第 1 节。）
 2. **权限是否已授予**：插件详情里的权限列表截图或抄录。
 3. **日志中按 `color-picker` 过滤出来的那几行**，以及界面上实际显示的文案。

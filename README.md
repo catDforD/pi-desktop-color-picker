@@ -6,7 +6,7 @@
 | --- | --- |
 | 版本 | 0.4.0(尚未上架) |
 | 插件 id | `io.github.catdford.color-picker` |
-| 宿主 | 需要较新版本(快捷键与主题依赖宿主后来开放的能力,见[已知限制](./docs/permissions.md#已知限制)) |
+| 宿主 | 主题依赖宿主较晚开放的能力,详见[已知限制](./docs/permissions.md#已知限制) |
 | 许可 | MIT |
 
 ## 界面
@@ -46,6 +46,7 @@
 - **对比度** —— 对白、对黑的 WCAG 数值与 AA / AAA 判定,加三种色盲模拟。
 - **导出** —— CSS 变量、Tailwind v4 `@theme`、Tailwind v3 配置、JSON,复制即用。
 - **换主题** —— 把当前配色一键装成 PI-Desktop 主题,侧栏、编辑器、设置页一起换色。
+- **Agent 直接用** —— 注册了 `suggest_palette` 工具和一份配色 skill,一句话就能让它配一套。
 
 ## 三个典型用法
 
@@ -59,9 +60,9 @@
 
 插件向 Agent 注册了一个 `suggest_palette` 工具和一份配色 skill。你在对话里说"用 #3b82f6 当主色,配一套深色科技感的方案",Agent 会自己调用它——不需要你念工具名。AI 使用的是你在 PI-Desktop 里已经配好的模型,凭据不会经过插件。
 
-## 快捷键
+## 打开面板
 
-`Alt+Shift+C` 在任何应用里唤起面板。这个键被别的程序占用时会自动降级到 `Ctrl+Alt+C`、`Alt+Shift+P`。
+命令面板里的「Color Picker: Open」随时可以打开它。**系统级快捷键还没进这个版本**:`Alt+Shift+C` 需要宿主的 `keyboard.globalShortcut` 权限,而它至今没有出现在任何发布版里——宿主一发布就会补上,代码与决策记在 [PLAN.md](./PLAN.md)。
 
 ## 安装
 
@@ -72,7 +73,7 @@
 ## 开发
 
 ```
-main.js                    插件入口(主进程):命令、全局快捷键、AI 与主题通道、Agent 工具
+main.js                    插件入口(主进程):命令、AI 与主题通道、Agent 工具
 renderer/                  面板与工作面板视图共用的界面(沙箱页面,走 window.pluginBridge)
   index.html  app.js  styles.css
 lib/color.js               HEX/RGB/HSL/OKLCH 转换、CSS 颜色字符串解析
@@ -103,7 +104,7 @@ node <PI-Desktop>/packages/plugin-devkit/dist/cli.js check .     # 打包前校�
 
 ## English
 
-A color picker and palette tool for PI-Desktop. Browse the full Tailwind v4 and Material palettes plus presets and gradients, copy any color as HEX / RGB / HSL / OKLCH, pick colors out of an image or a pasted screenshot with a pixel loupe, generate harmony schemes, 50–950 scales or an AI palette from a style description, check WCAG contrast and color-blindness simulation, and export CSS variables, a Tailwind theme or JSON. The current color can also become a PI-Desktop theme in one click. `Alt+Shift+C` opens the panel from anywhere, and a `suggest_palette` tool plus skill let the agent ask for a palette directly. Not published to the marketplace yet; see [PLAN.md](./PLAN.md).
+A color picker and palette tool for PI-Desktop. Browse the full Tailwind v4 and Material palettes plus presets and gradients, copy any color as HEX / RGB / HSL / OKLCH, pick colors out of an image or a pasted screenshot with a pixel loupe, generate harmony schemes, 50–950 scales or an AI palette from a style description, check WCAG contrast and color-blindness simulation, and export CSS variables, a Tailwind theme or JSON. The current color can also become a PI-Desktop theme in one click. A `suggest_palette` tool plus skill let the agent ask for a palette directly. A global shortcut is not part of this build yet — it needs a host permission that has not shipped in a release. Not published to the marketplace yet; see [PLAN.md](./PLAN.md).
 
 ## License
 
