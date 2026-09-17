@@ -1,85 +1,87 @@
 # 色卡选择器 · Color Picker
 
-面向前端与设计工作的 PI-Desktop 插件:浏览色板、从图片取色、做配色与对比度检查、导出可直接使用的颜色代码,并能让 Agent 直接调用配色。
+给 PI-Desktop 加一套取色与配色工具:翻色板、从图片里取色、配一套和谐色、确认它能不能看清、把结果导出成代码——顺手还能把满意的配色变成应用自己的主题。
 
-> **状态:阶段 0-5 已完成** —— 面板里可浏览 Tailwind v4 / Material / 预设配色 / 渐变,从图片或剪贴板取色(带放大镜),做和谐配色、色阶生成、AI 配色、对比度与色盲检查,导出 CSS 变量、Tailwind v4 `@theme`、Tailwind v3 配置或 JSON,还能用当前色给 PI-Desktop 换一套主题;`Alt+Shift+C` 可在任何应用里唤起面板;`suggest_palette` 工具与 skill 让 Agent 也能取用。完整规划见 [PLAN.md](./PLAN.md)。
->
-> 插件 id:`io.github.catdford.color-picker`(尚未发布)
-
-## 它解决什么问题
-
-写前端、做设计时反复遇到两件小事:这个颜色是多少号,以及这份配色该怎么搭。这个插件把这两件事放进 PI-Desktop 里,不用再切到浏览器查色值。
-
-## 现在能做什么
-
-- **色板浏览**:Tailwind CSS v4 全部 26 个色系(50–950,OKLCH 源值)、Material Design 19 个色系(含 A100–A700 强调色)、15 套预设配色、12 条渐变
-- **色值复制**:HEX / RGB / HSL / OKLCH 四种记法,点哪行复制哪行;点当前色块按设置里的记法复制。Tailwind 色值复制的是官方 OKLCH 原值,不是转换后的近似值
-- **从图片取色**:选择文件夹后列出其中的图片,或直接取剪贴板历史里的最新图片;放大镜跟随光标显示真实像素(网格 + 十字准星 + 实时色值),方向键 1px 微调(Shift 一次 10px),点击取色
-- **和谐配色**:互补、类似、三角、分裂互补,以 OKLCH 色相旋转计算
-- **色阶生成**:由当前色生成 50–950 十一道色阶,500 档精确等于基色
-- **AI 配色**:给一句风格描述(或只用当前色),让宿主拥有的模型生成整套命名配色,结果可单点取用、可整套送去导出;模型在面板的「AI 配色」区块里选择(带真实名称的下拉)并记住——插件设置对话框里不再有那一项,因为宿主把声明过的设置原样列出,只会暴露一串 provider key
-- **对比度检查**:对白/对黑的 WCAG 对比度与 AA/AAA 判定,以及示例文字预览
-- **色盲模拟**:红色盲 / 绿色盲 / 蓝色盲三种模拟结果
-- **导出**:CSS 变量、Tailwind v4 `@theme` 块、Tailwind v3 配置、JSON
-- **PI-Desktop 主题**:用当前色生成一套主题并一键应用——界面外壳(侧栏、编辑器、设置、输入框)会跟着换色,之后可在 设置 → 通用 → 主题 里切换或换回;每个底色一个槽位(深色/浅色各一),重新生成即覆盖;可随时卸载,也可以「复制 CSS」查看或分享生成的那段样式
-- **全局快捷键**:`Alt+Shift+C` 唤起面板(被占用时自动降级到 `Ctrl+Alt+C`、`Alt+Shift+P`)
-- **Agent 集成**:`suggest_palette` 工具 + `palette-suggestions` skill,Agent 可直接要一套配色
-
-## 计划中(见 PLAN.md)
-
-- 阶段 6:上架
-- 二期:屏幕取色(取色器里已预留「屏幕取色」来源位,当前置灰)——需要宿主提供一次性截屏能力 `screen.capture`,方案与理由见 [PLAN.md](./PLAN.md) §5
-
-## 权限
-
-插件按最小权限原则申报,全部权限及用途:
-
-| 权限 | 用途 |
+| | |
 | --- | --- |
-| `ui.panel` | 命令与全局快捷键打开独立面板 |
-| `ui.view` | 在右侧工作面板提供界面 |
-| `ui.theme` | 生成并安装 PI-Desktop 主题(`pi.themes.upsert` + `pi.app.setTheme`) |
-| `clipboard.write` | 复制色值 |
-| `clipboard.read` | 读取剪贴板历史以取色(只读,且只在面板里发生) |
-| `fs.read` | 读取**你自己选择**的文件夹里的图片;`fs.read.root` 为 `userSelected`,不申报 workspace 范围、不申报任何写权限 |
-| `keyboard.globalShortcut` | 申请 `Alt+Shift+C` 作为唤起面板的系统级快捷键 |
-| `agent.complete` | 让宿主用**你已配置的模型**做一次性的配色生成 |
-| `models.list` | 列出可用模型,供面板里的模型选择器使用 |
-| `agent.tool.register` | 注册 `suggest_palette` 工具供 Agent 调用 |
-| `agent.prompt.inject` | 通过 `contributes.skills` 提供配色 skill 文档 |
+| 版本 | 0.4.0(尚未上架) |
+| 插件 id | `io.github.catdford.color-picker` |
+| 宿主 | 需要较新版本(快捷键与主题依赖宿主后来开放的能力,见[已知限制](./docs/permissions.md#已知限制)) |
+| 许可 | MIT |
 
-**数据流**:色板浏览、算法、取色与导出全部在本地面板完成。取色只读取你主动选择的目录与剪贴板历史;AI 调用只把你输入的主色/风格描述发给宿主选定的模型,模型凭据在宿主主进程解析,插件拿不到;安装主题会把**一段由插件生成、经宿主消毒的 CSS**交给宿主给应用外壳换色,生成的 CSS 存在插件自己的设置文件里,面板里可随时卸载;不访问网络、不写入文件、无常驻后台服务。
+## 界面
 
-Agent 工具在 Plan / Goal 模式下被宿主禁用(这是宿主对所有插件工具的规则)。
+面板从上到下是一条固定动线:当前色 → 四种记法 → 取色器 → 四个标签页。
 
-## 已知限制
+<!-- 面板是竖屏比例(约 400×640)。四张按同一高度并排,换图直接覆盖同名文件即可。 -->
+<table>
+  <tr>
+    <td align="center"><img src="./docs/screenshots/palettes.png" height="256" alt="色板页:按 Tailwind、Material、预设、渐变分类的色格"></td>
+    <td align="center"><img src="./docs/screenshots/harmony.png" height="256" alt="配色页:由当前色生成的色阶与四种和谐配色"></td>
+    <td align="center"><img src="./docs/screenshots/contrast.png" height="256" alt="对比度页:WCAG 数值、AA/AAA 判定与三种色盲模拟"></td>
+    <td align="center"><img src="./docs/screenshots/picker.png" height="256" alt="取色器:图片列表与放大镜读数"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>色板</sub></td>
+    <td align="center"><sub>配色</sub></td>
+    <td align="center"><sub>对比度</sub></td>
+    <td align="center"><sub>取色器</sub></td>
+  </tr>
+</table>
 
-- **AI 生成有 30 秒上限**:面板→主进程的转发通道是 30 秒,而 `agent.complete` 自身允许 90 秒,所以面板里的生成要快;超时会明确提示并保留重试
-- **每分钟 8 次**:宿主的调用配额,失败的调用同样计入
-- **剪贴板历史不是系统剪贴板**:只有粘贴进会话的图片会进入历史,复制到别处的截图看不到;也没有变更事件,所以只在打开取色层时读一次
-- **目录授权是内存级的**:一次只记一个目录,插件重载或应用重启后需要重新选择
-- **图片预览上限 5 MiB**:超过会明确提示,不会静默失败
-- **全局快捷键需要宿主支持**:该能力来自宿主 PR #409 之后的版本;更早的构建里插件会正常加载但快捷键不生效(日志里有记录)
-- **主题需要更新的宿主**:`pi.themes` / `pi.app.setTheme`(ADR 0260)还没进任何发布版(v0.14.8 早于它),旧宿主上这一块只显示"需要更新 PI-Desktop",其余功能照常
-- **主题只覆盖外壳**:宿主主题换的是应用外壳与内置界面,插件面板自己的一套样式不受影响;原生窗口底色(启动瞬间的窗口背景)运行期改不到,所以那一刻用的是宿主给当前明暗底色的默认值
-- **主题的持久化靠插件加载**:宿主的主题注册表随插件卸载/禁用而清空,插件在每次加载时重新注册自己存下的那份 CSS。宿主里的偏好字符串一直都在,所以禁用再启用后主题会自己回来;若改用其它主题,它会被宿主干净地回退
+| 标签页 | 做什么 |
+| --- | --- |
+| **色板** | 四个来源(Tailwind / Material / 预设 / 渐变),点色块即设为当前色 |
+| **配色** | 色阶、和谐配色,以及 AI 配色的入口 |
+| **对比度** | WCAG 对比度、AA/AAA 判定、三种色盲模拟 |
+| **导出** | 选范围和格式一键复制;底部是 PI-Desktop 主题 |
+
+**取色器**在面板顶部,点开是一层盖住整个面板的取色界面,来源可选文件夹里的图片或剪贴板历史里的最新图片。
+
+## 它能帮你做什么
+
+- **查色号** —— Tailwind v4 26 个色系、Material 19 个、15 套预设、12 条渐变,点一下复制成 HEX / RGB / HSL / OKLCH;Tailwind 给的是官方原值。
+- **取色** —— 设计稿、截图、素材图都行:放大镜看真实像素,方向键微调一像素,点击取出。
+- **配色** —— 互补 / 类似 / 三角 / 分裂互补四种和谐规则、50–950 色阶,或一句风格描述让 AI 生成整套带名字的配色。
+- **对比度** —— 对白、对黑的 WCAG 数值与 AA / AAA 判定,加三种色盲模拟。
+- **导出** —— CSS 变量、Tailwind v4 `@theme`、Tailwind v3 配置、JSON,复制即用。
+- **换主题** —— 把当前配色一键装成 PI-Desktop 主题,侧栏、编辑器、设置页一起换色。
+
+## 三个典型用法
+
+**查一个色号。** 色板页切到 Tailwind,点中要用的颜色 → 上方四种记法直接读,点任意一行复制。
+
+**从设计稿取色。** 把设计稿导出成 PNG 放进一个文件夹 →「取色器」→「选择文件夹…」→ 点开图片 → 放大镜对准、方向键微调 → 点击取出。取到的颜色立刻成为当前色,继续做配色或导出。
+
+**配一套色并落地。** 在配色页用色阶或 AI 得到一套颜色 →「整套用作导出」→ 导出页选 CSS 变量或 Tailwind 格式 → 复制。如果这套颜色你也想用在应用本身上,导出页底部的「生成并应用」会把它做成一个 PI-Desktop 主题。
+
+## 让 Agent 也能配色
+
+插件向 Agent 注册了一个 `suggest_palette` 工具和一份配色 skill。你在对话里说"用 #3b82f6 当主色,配一套深色科技感的方案",Agent 会自己调用它——不需要你念工具名。AI 使用的是你在 PI-Desktop 里已经配好的模型,凭据不会经过插件。
+
+## 快捷键
+
+`Alt+Shift+C` 在任何应用里唤起面板。这个键被别的程序占用时会自动降级到 `Ctrl+Alt+C`、`Alt+Shift+P`。
+
+## 安装
+
+尚未上架。当前可以按开发插件加载:启动 PI-Desktop 开发版,进入「插件 → Load development plugin」选择本目录。插件主进程的改动会热重载;**新增权限会中断热重载并要求重新授权**,漏授时面板会直接说明缺哪一项以及怎么补。
+
+申报了哪些权限、数据怎么流动、有哪些已知限制,见 [docs/permissions.md](./docs/permissions.md)。
 
 ## 开发
 
-本地调试:启动 PI-Desktop 开发版,进入「插件 → Load development plugin」选择本目录。插件主进程改动会热重载(新增权限会中断重载并要求重新授权)。
-
 ```
-main.js                    插件入口(主进程,CommonJS):命令、全局快捷键、AI 通道、主机主题通道、Agent 工具
-renderer/                  面板 / 工作面板视图共用的界面(沙箱页面,走 window.pluginBridge)
-  index.html               当前色头部 + 四标签页 + 取色覆盖层
-  app.js                   标签控制器、取色覆盖层、AI 区块、主题区块与全部交互
+main.js                    插件入口(主进程):命令、全局快捷键、AI 与主题通道、Agent 工具
+renderer/                  面板与工作面板视图共用的界面(沙箱页面,走 window.pluginBridge)
+  index.html  app.js  styles.css
 lib/color.js               HEX/RGB/HSL/OKLCH 转换、CSS 颜色字符串解析
 lib/palette.js             色板数据访问(统一命名与色值格式)
 lib/generate.js            色阶生成与和谐配色规则
 lib/contrast.js            WCAG 对比度与色盲模拟
 lib/export.js              CSS 变量 / Tailwind / JSON 导出
-lib/pick.js                取色几何与取样(与像素来源解耦,放大镜只认 { width, height, pixelAt })
-lib/ai.js                  配色提示词、模型输出的容错解析、导出文档转换
+lib/pick.js                取色几何与取样(放大镜只认 { width, height, pixelAt },与像素来源解耦)
+lib/ai.js                  配色提示词、模型输出的容错解析
 lib/theme.js               宿主主题:配色 → 设计令牌映射(明暗两套)、CSS 生成与自校验
 skills/palette-suggestions.md  Agent 用的 skill 文档
 lib/data/*.js              色板数据(tailwind / material 为生成产物,勿手改)
@@ -87,33 +89,21 @@ tools/gen-palettes.mjs     从 npm 固定版本包重新生成色板数据
 tests/                     node --test 用例(108 条)
 ```
 
-浏览器里 `lib/*.js` 以经典脚本加载(`file://` 源不允许 ES module),因此每个模块都写成 UMD:浏览器挂全局(`PiColor` / `PiPalette` / …),Node 里 `require` 即可——`main.js` 也因此能复用 `lib/ai.js` 与 `lib/theme.js`,主题预览与应用因此是**同一份生成逻辑**(面板算出来的就是要应用的那份)。
-
-跑测试:
+`lib/*.js` 是 UMD 模块:面板以经典脚本加载(沙箱页面是 `file://` 源,不加载 ES module),Node 里 `require` 直接用——所以主题预览和实际应用走的是同一份生成逻辑,面板里看到的就是将应用的那份。
 
 ```bash
-node --test
+node --test                                                     # 全部用例
+node tools/gen-palettes.mjs                                     # 重新生成色板数据(需要网络,日常不必跑)
+node <PI-Desktop>/packages/plugin-devkit/dist/cli.js check .     # 打包前校验
 ```
 
-重新生成色板数据(需要网络,npm 取 `tailwindcss@4.3.3` 与 `material-colors@1.2.6`;产物已提交,日常开发不需要跑):
+> `check` 会报三条 `permission.unused` 误报(`clipboard.write`、`clipboard.read`、`fs.read`):静态检查只读 `main.js`,而这三项的调用发生在面板里,那是宿主给面板设计的正常通道。另外它会如实提示 `agent.tool.register`、`agent.prompt.inject` 属于高风险权限。
 
-```bash
-node tools/gen-palettes.mjs
-```
-
-打包与校验(需要 PI-Desktop 仓库里的 devkit):
-
-```bash
-node <PI-Desktop>/packages/plugin-devkit/dist/cli.js check .
-```
-
-> 注意:`check` 会报三条 `permission.unused` 误报——`clipboard.write`、`clipboard.read`、`fs.read` 都"未在 main.js 里调用"。原因是静态检查只读 `main.js`,而这三个权限的调用发生在面板里(`renderer/app.js` 经 `window.pluginBridge` 调用 `fs.requestDirectory` / `fs.list` / `fs.readPreview` / `clipboard.getHistory` / `clipboard.writeText`),这正是宿主给面板设计的正常通道。
->
-> 另外它会提示 `agent.tool.register`、`agent.prompt.inject` 是高风险权限——这是事实,安装时需你显式授权。
+完整规划、已完成的阶段与二期(屏幕取色)的宿主需求见 [PLAN.md](./PLAN.md);真机验收清单见 [TESTING.md](./TESTING.md)。
 
 ## English
 
-A PI-Desktop plugin for front-end and design work: browse Tailwind v4, Material, preset and gradient palettes, pick colors out of an image or the clipboard history with a pixel loupe, generate harmony schemes, 50–950 scales and AI palettes through the host's own models, check WCAG contrast and color-blindness simulation, export CSS variables, a Tailwind theme or JSON, and install the current color as a PI-Desktop theme. `Alt+Shift+C` opens the panel from anywhere, and a `suggest_palette` tool plus skill let the agent ask for a palette directly. Marketplace publishing is still to come; see [PLAN.md](./PLAN.md).
+A color picker and palette tool for PI-Desktop. Browse the full Tailwind v4 and Material palettes plus presets and gradients, copy any color as HEX / RGB / HSL / OKLCH, pick colors out of an image or a pasted screenshot with a pixel loupe, generate harmony schemes, 50–950 scales or an AI palette from a style description, check WCAG contrast and color-blindness simulation, and export CSS variables, a Tailwind theme or JSON. The current color can also become a PI-Desktop theme in one click. `Alt+Shift+C` opens the panel from anywhere, and a `suggest_palette` tool plus skill let the agent ask for a palette directly. Not published to the marketplace yet; see [PLAN.md](./PLAN.md).
 
 ## License
 
