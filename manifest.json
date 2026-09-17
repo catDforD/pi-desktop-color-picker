@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "id": "io.github.catdford.color-picker",
   "name": "色卡选择器",
-  "version": "0.2.0",
-  "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，做和谐配色和对比度检查，生成色阶，并一键导出 CSS 变量、Tailwind 配置或 JSON。",
+  "version": "0.3.0",
+  "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，并一键导出 CSS 变量、Tailwind 配置或 JSON。",
   "i18n": {
     "en": {
       "name": "Color Picker",
-      "description": "Browse Tailwind, Material and preset palettes plus gradients in the work panel, check harmony and text contrast, generate a 50–950 scale, and export CSS variables, a Tailwind theme or JSON.",
-      "safetyNotes": "No network access, no file writes, no background service. The plugin only writes to the clipboard (copying a color value) and reads the settings the host stores for it. Colors are computed locally in the panel."
+      "description": "Browse Tailwind, Material and preset palettes plus gradients, pick colors out of images or the clipboard history, generate a scheme with AI, check harmony and text contrast, and export CSS variables, a Tailwind theme or JSON.",
+      "safetyNotes": "Reads only the folder you pick and the host's clipboard history, and only while you are asking it to; AI calls send the color or style description you typed to the model the host owns, and credentials never reach the plugin. No network access of its own, no file writes, no background service."
     },
     "zh-CN": {
       "name": "色卡选择器",
-      "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，做和谐配色和对比度检查，生成色阶，并一键导出 CSS 变量、Tailwind 配置或 JSON。",
-      "safetyNotes": "不访问网络、不写入文件、无常驻后台服务。插件只写剪贴板（复制色值）并读取宿主为它保存的设置，全部颜色计算都在面板本地完成。"
+      "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，并一键导出 CSS 变量、Tailwind 配置或 JSON。",
+      "safetyNotes": "只在你主动操作时读取你选择的文件夹与宿主剪贴板历史；AI 调用只把你输入的主色或风格描述交给宿主拥有的模型，凭据不会到达插件。插件本身不访问网络、不写入文件、无常驻后台服务。"
     }
   },
   "author": "catDforD",
@@ -62,11 +62,18 @@
         "category": "Design"
       }
     ],
+    "globalShortcuts": [
+      {
+        "id": "color-picker.open",
+        "command": "color-picker.open",
+        "default": "Alt+Shift+C"
+      }
+    ],
     "settings": [
       {
         "key": "format",
-        "title": "Copy format",
-        "description": "Notation used when clicking the current-color swatch to copy it.",
+        "title": "复制记法 · Copy format",
+        "description": "点击色块即按此记法复制。",
         "type": "select",
         "default": "hex",
         "enum": [
@@ -76,9 +83,57 @@
           { "label": "OKLCH", "value": "oklch" }
         ]
       }
+    ],
+    "agentTools": [
+      {
+        "name": "suggest_palette",
+        "description": "Suggest a color palette (配色, 色板, 主题色) from a base color or a style description; returns named hex colors.",
+        "risk": "low",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "base": {
+              "type": "string",
+              "description": "Base color in any CSS notation, e.g. #3b82f6 or oklch(62.3% 0.188 259.81). Optional."
+            },
+            "style": {
+              "type": "string",
+              "description": "Style description, e.g. \"tech, dark, slightly purple\". Optional."
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 8,
+              "description": "How many colors to return. Defaults to 5."
+            }
+          }
+        }
+      }
+    ],
+    "skills": [
+      {
+        "id": "palette-suggestions",
+        "path": "skills/palette-suggestions.md"
+      }
     ]
   },
-  "permissions": ["ui.panel", "ui.view", "clipboard.write"],
+  "fs": {
+    "read": {
+      "root": "userSelected"
+    }
+  },
+  "permissions": [
+    "ui.panel",
+    "ui.view",
+    "clipboard.write",
+    "clipboard.read",
+    "fs.read",
+    "keyboard.globalShortcut",
+    "agent.complete",
+    "agent.tool.register",
+    "agent.prompt.inject",
+    "models.list"
+  ],
   "engines": {
     "piDesktop": ">=0.9.0"
   },

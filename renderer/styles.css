@@ -164,6 +164,8 @@ h3 {
 }
 
 .picker-label {
+  /* Takes the slack so the pick button and the color input stay together. */
+  flex: 1 1 auto;
   color: var(--muted);
   font-size: 12px;
 }
@@ -267,6 +269,17 @@ input[type="color"]::-webkit-color-swatch {
 .segment:hover {
   background: var(--surface-hover);
   color: var(--fg);
+}
+
+/* A reserved segment (the screen eyedropper) is visible but not selectable. */
+.segment:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.segment:disabled:hover {
+  background: transparent;
+  color: var(--muted);
 }
 
 .segment[aria-selected="true"] {
@@ -529,6 +542,24 @@ input[type="color"]::-webkit-color-swatch {
   line-height: 1.34;
 }
 
+/* A model label is longer than any palette name ("gpt-5.3-codex-spark (OpenAI
+   (ChatGPT Plus/Pro))"), and the width cap above would wrap it onto a second
+   line, growing the control to two rows. Cut it with an ellipsis instead. */
+.field select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Deliberately a separate rule from the one above: an engine that does not
+   know this pseudo-element drops the whole selector list, and the control's
+   own styles must not fall with it. */
+.field select::selectedcontent {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* base-select swaps the control's chevron for a UA triangle; rebuild the thin
    one. currentColor lets a single rule serve both themes. */
 .field select::picker-icon {
@@ -545,6 +576,8 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .field select::picker(select) {
+  /* Long option labels must not push the popup past the panel's edge. */
+  max-width: min(340px, calc(100vw - 24px));
   /* Chrome opens the picker above the control, and no fallback list changes
      that — flip-block lands above even with room below — so ask for block-end
      and turn the fallbacks off. Cost of that: a window shorter than this
@@ -562,14 +595,18 @@ input[type="color"]::-webkit-color-swatch {
   box-shadow: 0 10px 24px rgb(0 0 0 / 16%);
 }
 
+/* Block, not flex: the checkmark that needed aligning is hidden, and a flex
+   container cannot ellipsize its anonymous text item. */
 .field select option {
-  display: flex;
-  align-items: center;
+  display: block;
+  overflow: hidden;
   padding: 5px 8px;
   border-radius: 6px;
   background: transparent;
   color: var(--fg);
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* The UA checkmark pushes the first label out of line with the others; the
@@ -626,4 +663,266 @@ input[type="color"]::-webkit-color-swatch {
 .empty {
   color: var(--muted);
   font-size: 12px;
+}
+
+/* --- pick from image ------------------------------------------------------ */
+
+.pick-open {
+  flex: none;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-hover);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pick-open:hover {
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+
+.pick-open:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: 1px;
+}
+
+/* Covers the whole panel: aiming at pixels wants the space, and the flow is a
+   detour, not a destination. */
+.pick-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--pi-plugin-titlebar-height, 0px) 16px 16px;
+  background: var(--bg);
+  outline: none;
+}
+
+.pick-overlay[hidden] {
+  display: none;
+}
+
+.pick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pick-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 560;
+}
+
+.pick-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Host and provider messages arrive as unbroken walls of JSON; without this they
+   set the panel's min-content width and push the whole layout sideways. */
+.pick-status,
+.ai-actions .hint,
+.ai-result-name {
+  overflow-wrap: anywhere;
+}
+
+.pick-files {
+  display: flex;
+  flex-direction: column;
+  max-height: 132px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.pick-files[hidden] {
+  display: none;
+}
+
+.pick-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pick-file:hover,
+.pick-file:focus-visible {
+  background: var(--surface-hover);
+}
+
+.pick-file[aria-current="true"] {
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  font-weight: 560;
+}
+
+.pick-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-file-size {
+  flex: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Checkerboard behind the canvas: transparent art should read as transparent,
+   not as panel surface. */
+.pick-stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, var(--surface-hover) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--surface-hover) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--surface-hover) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--surface-hover) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.pick-stage[hidden] {
+  display: none;
+}
+
+.pick-canvas {
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Follows the pointer but never takes it: pointer-events off keeps pointermove
+   flowing to the canvas underneath. */
+.pick-loupe {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 18%);
+  pointer-events: none;
+}
+
+.pick-loupe[hidden] {
+  display: none;
+}
+
+.pick-loupe canvas {
+  display: block;
+  border-radius: 5px;
+}
+
+.pick-loupe-value {
+  color: var(--fg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pick-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pick-foot .hint {
+  /* One line, ellipsized if a translation runs long: the footer's job is to
+     tell you what the keys do, not to become a paragraph. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The button keeps its label on one line and its natural width. */
+.pick-foot .action {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* --- AI palette ----------------------------------------------------------- */
+
+.ai-style {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.ai-style:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 58%, transparent);
+  outline-offset: 1px;
+}
+
+.ai-style::placeholder {
+  color: var(--muted);
+}
+
+.ai-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-actions .action {
+  flex: none;
+}
+
+.ai-actions .hint {
+  min-width: 0;
+}
+
+.ai-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-result-name {
+  overflow: hidden;
+  color: var(--fg);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-raw {
+  max-height: 120px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }

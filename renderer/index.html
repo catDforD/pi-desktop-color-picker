@@ -42,6 +42,7 @@
 
       <section class="picker" aria-labelledby="picker-label">
         <label class="picker-label" id="picker-label" for="native-picker" data-label="pick"></label>
+        <button class="pick-open" id="pick-open" type="button" data-label="pickImage"></button>
         <input id="native-picker" type="color" value="#3b82f6" />
       </section>
 
@@ -61,6 +62,18 @@
         <h3 data-label="shadesTitle"></h3>
         <div id="shade-row"></div>
         <div id="harmony-body"></div>
+
+        <h3 data-label="aiTitle"></h3>
+        <label class="field">
+          <span data-label="aiModel"></span>
+          <select id="ai-model"></select>
+        </label>
+        <textarea class="ai-style" id="ai-style" rows="2" data-placeholder="aiStyle"></textarea>
+        <div class="ai-actions">
+          <button class="action" id="ai-run" type="button" data-label="aiRun"></button>
+          <span class="hint" id="ai-status" role="status"></span>
+        </div>
+        <div id="ai-result"></div>
       </section>
 
       <section class="panel" id="panel-contrast" role="tabpanel" aria-labelledby="tab-contrast" hidden>
@@ -84,6 +97,32 @@
       </section>
     </main>
 
+    <section class="pick-overlay" id="pick-overlay" hidden aria-labelledby="pick-title" tabindex="-1">
+      <header class="pick-head">
+        <h2 class="pick-title" id="pick-title" data-label="pickTitle"></h2>
+        <button class="link-button" id="pick-close" type="button" data-label="pickClose"></button>
+      </header>
+
+      <div class="segmented" id="pick-sources" role="tablist" aria-label="Image source"></div>
+
+      <p class="pick-status" id="pick-status" role="status"></p>
+      <button class="action" id="pick-folder" type="button" data-label="pickChooseFolder"></button>
+      <div class="pick-files" id="pick-files" hidden></div>
+
+      <div class="pick-stage" id="pick-stage" hidden>
+        <canvas class="pick-canvas" id="pick-canvas"></canvas>
+        <div class="pick-loupe" id="pick-loupe" hidden>
+          <canvas id="pick-loupe-canvas"></canvas>
+          <span class="pick-loupe-value" id="pick-loupe-value"></span>
+        </div>
+      </div>
+
+      <footer class="pick-foot">
+        <span class="hint" id="pick-hint"></span>
+        <button class="action" id="pick-use" type="button" data-label="pickUse" disabled></button>
+      </footer>
+    </section>
+
     <script src="../lib/color.js"></script>
     <script src="../lib/data/tailwind.js"></script>
     <script src="../lib/data/material.js"></script>
@@ -92,6 +131,8 @@
     <script src="../lib/generate.js"></script>
     <script src="../lib/contrast.js"></script>
     <script src="../lib/export.js"></script>
+    <script src="../lib/pick.js"></script>
+    <script src="../lib/ai.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
