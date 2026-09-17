@@ -148,6 +148,9 @@ vite.config.ts.timestamp-*
 # Agent workspace metadata
 .zcode/
 
+# Local notes and upstream request drafts (never shipped with the plugin)
+.notes/
+
 # OS metadata
 .DS_Store
 Thumbs.db
