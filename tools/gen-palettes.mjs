@@ -13,14 +13,12 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { createRequire } from "node:module";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const require = createRequire(import.meta.url);
 
 const TAILWIND = { package: "tailwindcss", version: "4.3.3", license: "MIT" };
 const MATERIAL = { package: "material-colors", version: "1.2.6", license: "ISC" };
@@ -72,9 +70,89 @@ function unpack({ package: name, version }) {
   return dest;
 }
 
+/**
+ * The palette values, walked out of `dist/colors.js` rather than loaded.
+ *
+ * That file is one minified line of literals — `{slate:{50:"oklch(…)",…},…}`
+ * with no expressions — and this tool only wants the data from it. Loading it
+ * would mean executing a module fetched from the network at build time, which
+ * the plugin center's package audit flags as dynamic module loading; reading
+ * its text side-steps that without hiding anything, because the file is a
+ * generated artifact, not a program we need to run.
+ *
+ * The walk accepts exactly the shapes the file uses: bare identifiers or quoted
+ * strings as keys, quoted strings or nested objects as values. Anything else
+ * throws rather than producing a partial palette.
+ */
+function readColorLiterals(source) {
+  const start = source.indexOf("{");
+  if (start < 0) throw new Error("colors.js: no object literal found");
+  const parsed = parseObject(source, start);
+  if (Object.keys(parsed.value).length === 0) throw new Error("colors.js: parsed an empty palette");
+  return parsed.value;
+}
+
+function parseObject(source, start) {
+  const result = {};
+  let index = start + 1;
+  for (;;) {
+    index = skipSpaceAndCommas(source, index);
+    if (index >= source.length) throw new Error("colors.js: unterminated object");
+    if (source[index] === "}") return { value: result, index: index + 1 };
+    const key = readKey(source, index);
+    index = skipSpace(source, key.index);
+    if (source[index] !== ":") throw new Error(`colors.js: expected ":" at ${index}`);
+    index = skipSpace(source, index + 1);
+    const entry = source[index] === "{" ? parseObject(source, index) : readString(source, index);
+    result[key.value] = entry.value;
+    index = entry.index;
+  }
+}
+
+function skipSpace(source, index) {
+  let cursor = index;
+  while (cursor < source.length && /\s/.test(source[cursor])) cursor += 1;
+  return cursor;
+}
+
+function skipSpaceAndCommas(source, index) {
+  let cursor = index;
+  for (;;) {
+    cursor = skipSpace(source, cursor);
+    if (source[cursor] !== ",") return cursor;
+    cursor += 1;
+  }
+}
+
+function readKey(source, index) {
+  if (source[index] === '"') return readString(source, index);
+  const match = /^[A-Za-z0-9_$]+/.exec(source.slice(index));
+  if (!match) throw new Error(`colors.js: expected a key at ${index}`);
+  return { value: match[0], index: index + match[0].length };
+}
+
+function readString(source, index) {
+  if (source[index] !== '"') throw new Error(`colors.js: expected a string at ${index}`);
+  let value = "";
+  let cursor = index + 1;
+  while (cursor < source.length) {
+    const char = source[cursor];
+    if (char === "\\") {
+      value += source[cursor + 1] ?? "";
+      cursor += 2;
+      continue;
+    }
+    if (char === '"') return { value, index: cursor + 1 };
+    value += char;
+    cursor += 1;
+  }
+  throw new Error("colors.js: unterminated string");
+}
+
 function extractTailwind() {
   const dest = unpack(TAILWIND);
-  const colors = require(join(dest, "package/dist/colors.js"));
+  // Read the palette out of the file, do not load it: see readColorLiterals.
+  const colors = readColorLiterals(readFileSync(join(dest, "package/dist/colors.js"), "utf8"));
 
   const ramps = {};
   const singles = {};
