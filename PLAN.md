@@ -1,6 +1,6 @@
 # 色卡选择器插件 — 开发规划
 
-> 状态:阶段 0-4 已完成(阶段 2 含面板接线,阶段 3 含取色覆盖层,阶段 4 含 Agent 集成);阶段 5(宿主主题)与阶段 6(上架)未开工;**二期屏幕取色已定型为宿主一次性截图方案,等待宿主提供 `screen.capture`**
+> 状态:阶段 0-5 已完成(阶段 2 含面板接线,阶段 3 含取色覆盖层,阶段 4 含 Agent 集成,阶段 5 含宿主主题);阶段 6(上架)未开工;**二期屏幕取色已定型为宿主一次性截图方案,等待宿主提供 `screen.capture`**
 > 最后更新:2026-09-17
 
 ## 1. 背景
@@ -27,7 +27,7 @@
 | 剪贴板读取 | `pi.clipboard.readText` / `getHistory()`(历史条目含 `{ type: "image", data, width, height }`) |
 | AI 补全 | `pi.agent.complete`,宿主解析凭据、`tools: []` 一次性补全;每插件 60 秒 8 次(`RATE_LIMITED`)、90 秒预算(`TIMEOUT`)、空输出为 `INVALID_ARGUMENT` |
 | Agent 集成 | `pi.agent.registerTool`、`agent.prompt.inject`(技能) |
-| 宿主主题 | `pi.themes.upsert/remove/list`(ADR 0260,upsert 后正在使用的主题立即生效、无需重载)、`contributes.themes`(静态 `.css` + `base: light/dark`);需 `ui.theme` |
+| 宿主主题 | `pi.themes.upsert/remove/list` + `pi.app.setTheme`(ADR 0260,upsert 后正在使用的主题立即生效、无需重载;id 由宿主拼成 `plugin:<pluginId>:<themeId>`)、`contributes.themes`(静态 `.css` + `base: light/dark`);需 `ui.theme`。**实测**:`setVariables` 的变量名保留 `--pi-` / `--ds-` / `--font-` / `--text-` / `--motion-` 前缀,所以它只能调插件自己的旋钮,**够不到宿主设计令牌**;宿主每个主题一套键值,upsert 的 CSS 不在宿主侧落盘 |
 | 通知 | `ui.showToast`(无权限)、`ui.notify` / 原生通知(需 `notify`) |
 
 ### 当前不可用
@@ -158,12 +158,25 @@
 
 **限制(已写进 README)**:面板转发上限 **30 秒** < `agent.complete` 自身的 90 秒预算;每分钟 8 次且失败的调用照样计入;模型空输出走 `PLUGIN_API_FAILED` 而不是文档说的 `INVALID_ARGUMENT`(broker 只透传 `.code`),所以 UI 不按后者分支;工具在 Plan/Goal 模式下被宿主禁用。
 
-### 阶段 5 — 生成并安装宿主主题(3-5 天)
+### 阶段 5 — 生成并安装宿主主题 ✅ 已完成(0.4.0)
 
-- 两条路:`contributes.themes`(静态 `.css` + `base`)或 `pi.themes.upsert({ id, label, base, css })`(运行时,立即生效)
-- CSS 会过 `sanitizeThemeCss`;另有 `pi.themes.setVariables` 只接受已声明变量、不接受 CSS 文本
-- 主要工作量:**把配色映射到宿主的设计令牌变量**,明暗两套
-- 完成标准:生成 → 预览 → 应用 → 卸载全链路可用(权限 `ui.theme`)
+**决策记录(2026-09-17 确认,均以宿主源码核实,非仅 ADR 文本)**
+
+| 决策 | 结论 |
+| --- | --- |
+| 通道 | `themes.upsert/remove/list` 与 `app.setTheme` **都是面板直连通道**(宿主 `invokePanelWithoutToolContext` 的 switch 里有),但统一走主进程一个通道 `colorPicker.theme`(四个动作:`status` / `apply` / `restore` / `remove`)。理由:持久化只有主进程能做(`plugin.setSettings`),面板直接 upsert 会变成"注册成功但没存下"的半步状态;一个地方管 id、label 与存储,避免两处漂移 |
+| 令牌映射 | **明暗两套策略不对称,是宿主自己的不对称**:暗色块的语义令牌全部由原始色阶派生(`--ds-bg-primary: var(--gray-900)`、`--ds-bg-hover: color-mix(… var(--gray-0) 6% …)`)→ 只改 13 档 `--gray-*` + 5 档 `--accent-*` + 3 个字面量的暗色面 + accent 三件套,共 24 条;浅色块写的是 49 个 `--ds-*` 字面量、完全不碰色阶 → 生成浅色主题就照着写,共 52 条。`--ds-bg-sidebar` 保持颜色值(渐变会打断 `color-mix`/玻璃层消费者),`windowBackground` 与状态色不碰 |
+| 色相命名 | 按 OKLCH 色相**实测锚点**分带(纯红 29°、纯品红 328°、`#8b5cf6` 293°),不用均匀 30° 分格——均匀分格会把纯红叫成"橙"。12 个色族 + 中性,中英各一套,主题名形如「蓝 · 深色」 |
+| 对比度承诺 | accent 同时是链接与图标的墨色,所以强制 `--ds-accent` 对底色 ≥ 4.5:1(在 OKLCH 明度上朝远离底色的方向走,极端种子退化为纯黑/纯白);文本三档 ≥ 7:1 |
+| 持久化 | 宿主主题注册表**是 per-load 的**:卸载/禁用/崩溃走 `clearContributions`,该插件的主题全部删除,且 upsert 的 CSS 不落盘;只有 `AppSettings.theme` 偏好字符串持久。所以安装 = 把 CSS 存进插件自己的 `settings.json` + **每次 `onLoad` 重新 upsert**,偏好由宿主自动重新绑上(主题不在时宿主渲染层干净回退 `system`) |
+| 幂等 | 每个底色一个固定槽位(`pi-theme-dark` / `pi-theme-light`),重新生成是覆盖而不是堆积;两个槽位可共存(深色套主题不影响浅色那套) |
+| 预览 | 面板用**同一个 `lib/theme.js`** 本地生成预览色带,不靠宿主回传令牌——面板显示的就是将要应用的值。另给一个「复制 CSS」,生成物可审计、可分享 |
+| 降级 | `pi.themes`/`app.setTheme` 特性检测 + 明确文案。**这两个 API 还没有进任何发布 tag**(v0.14.8 在 ADR 0260 之前),所以旧宿主上这一块只显示"需要更新 PI-Desktop",其余功能不受影响 |
+| 没做 | 原生窗口底色 `windowBackground` 只有静态 `contributes.themes` 能给(要在打包时就存在 `.css`),纯运行期方案拿不到——在明暗底色与宿主一致时不构成问题;宿主主题只改外壳,插件面板自身外观不变(面板是独立沙箱文档、自带一套 CSS 变量),这一点写进了面板文案与 README |
+
+已完成:`lib/theme.js`(令牌映射 + CSS 生成 + 自校验)、`main.js` 的 `colorPicker.theme` 与 onLoad 重新注册、导出页主题区块(底色选择 + 预览色带 + 生成并应用 / 还原 / 卸载 / 复制 CSS + 状态行)、`tests/theme.test.js` 16 条与 `plugin-main` 主题用例 15 条。
+
+**验证方式(不只是单测)**:① 生成的全部 16 张表(8 个种子 × 明暗)喂给**宿主自己的 `sanitizeThemeCss`**,全部通过且原样不改写;② 级联探针——把宿主的真实 `tokens.css` 与生成的表一起加载,读回计算值:暗色下 `--ds-bg-primary` 解析成我们给的 `#0b182d`、`--ds-text-primary` 解析成我们的 `--gray-0`(证明宿主的 `var()` 派生链确实跟着走),浅色下 `--ds-bg-primary` 是我们的 `#fdfeff` 而不是内置的 `#ffffff`(证明 `:root[data-plugin-theme=…][data-theme]` 的特异性胜出,不依赖样式表顺序);③ 无头浏览器跑完应用 → 还原 → 切底色 → 复制 CSS 全流程与三条负路径(未授权、旧宿主、失败),并断言面板宽度不被撑开。
 
 ### 阶段 6 — 上架(1-2 天 + 审核等待)
 
@@ -198,7 +211,7 @@
 
 > 现在就可以做的部分已经做完了:取色器里的「屏幕取色」来源位已占位并置灰,提示"暂未开放——需要宿主先开放屏幕采集能力"。
 
-- [ ] manifest 增加 `screen.capture` 权限(高危,安装时需显式授权),README 权限表与安全声明同步
+- [ ] manifest 增加 `screen.capture` 权限(高危,安装时需显式授权),README 权限表与安全声明同步。**注意授权是每次加载记录一次的**:0.4.0 已经用掉了一轮(为 `ui.theme`),这一项到位时又是一轮"禁用后重新启用并授权",无法与已发生的合并
 - [ ] 第三个来源启用;点击后调面板直连通道 `screen.capture`,拿到的 `Uint8Array` + mime 走现有 `pickUseImage` 路径(与剪贴板来源同一段代码)
 - [ ] 遮挡处理:若宿主在采集时隐藏了自身窗口,把截图里的缺失区域渲染成明确的"不可用"块(复用棋盘格样式),而不是让用户对着空洞猜
 - [ ] `hideHostWindow` 用默认值(true);取消/拒绝返回 `null` 时保持当前色并提示"已取消"
@@ -211,7 +224,7 @@
 - 阶段 0-6 不依赖任何人,可立即开工;唯一外部依赖是轨道 B,所以"先提需求、再开发"的顺序很重要。
 - 建议节奏:先用阶段 1+2 做出"能翻色板、能检查对比度、能一键复制"的可演示版本,拿实物去喂需求讨论。
 - 风险点:
-  - 阶段 5 的宿主主题令牌映射需要先摸清变量清单,可能超预期。
+  - ~~阶段 5 的宿主主题令牌映射需要先摸清变量清单,可能超预期。~~ 已结案:变量清单摸清了(暗色 90 个 `--ds-*` 里绝大多数是宽度/圆角/阴影,颜色面只有 18 个原始档位 + 少量字面量),工作量落在"两套不对称策略"上而不是"变量太多",见阶段 5 决策表。
   - 阶段 4 的模型输出稳定性依赖 JSON 校验与兜底。
   - 若轨道 B 被拒,屏幕取色降级为"图片取色 + 剪贴板历史图片取色"(两者都已实现),一期功能不受影响;取色器里预留的来源位保持置灰即可。
 
@@ -220,7 +233,7 @@
 > 可直接贴到 issue #87 或作为 PR 的说明。已按"对宿主改动最小"重写:方案 A(宿主画全屏放大镜覆盖窗)作废,改为**宿主只返回一张截屏,插件自己取色**。
 
 ```markdown
-补充一期进展:插件已完成色板浏览、图片/剪贴板取色(带像素放大镜)、和谐配色与色阶、WCAG 对比度与色盲模拟、AI 配色(经 `onPanelInvoke` 调用宿主模型)、CSS/Tailwind/JSON 导出,以及 `Alt+Shift+C` 全局快捷键与 `suggest_palette` 工具 + skill。仓库仍为 https://github.com/catDforD/pi-desktop-color-picker。
+补充一期进展:插件已完成色板浏览、图片/剪贴板取色(带像素放大镜)、和谐配色与色阶、WCAG 对比度与色盲模拟、AI 配色(经 `onPanelInvoke` 调用宿主模型)、CSS/Tailwind/JSON 导出、`Alt+Shift+C` 全局快捷键与 `suggest_palette` 工具 + skill,以及用配色生成并安装 PI-Desktop 主题(ADR 0260 的 `themes.upsert` + `app.setTheme`)。仓库仍为 https://github.com/catDforD/pi-desktop-color-picker。
 
 现在只剩二期一项需要宿主能力:**屏幕取色**。取色器里已经把「屏幕取色」这个来源位预留好了(当前置灰),插件侧的放大镜、方向键微调、读数、落地到当前色的链路都已实现并逐像素验证过——**缺的只是"拿到屏幕像素"这一步**。
 
