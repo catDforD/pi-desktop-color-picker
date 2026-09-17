@@ -94,6 +94,21 @@
         </label>
         <pre class="code" id="export-preview"></pre>
         <button class="action" id="export-copy" type="button" data-label="copyExport"></button>
+
+        <h3 data-label="themeTitle"></h3>
+        <p class="hint" id="theme-note"></p>
+        <label class="field theme-field">
+          <span data-label="themeBase"></span>
+          <select id="theme-base"></select>
+        </label>
+        <div class="theme-preview" id="theme-preview"></div>
+        <div class="theme-actions">
+          <button class="action" id="theme-apply" type="button" data-label="themeApply"></button>
+          <button class="link-button" id="theme-restore" type="button" data-label="themeRestore"></button>
+          <button class="link-button" id="theme-remove" type="button" data-label="themeRemove"></button>
+          <button class="link-button" id="theme-copy" type="button" data-label="themeCopyCss"></button>
+        </div>
+        <p class="theme-status" id="theme-status" role="status"></p>
       </section>
     </main>
 
@@ -133,6 +148,7 @@
     <script src="../lib/export.js"></script>
     <script src="../lib/pick.js"></script>
     <script src="../lib/ai.js"></script>
+    <script src="../lib/theme.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

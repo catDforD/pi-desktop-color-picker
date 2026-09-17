@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "id": "io.github.catdford.color-picker",
   "name": "色卡选择器",
-  "version": "0.3.0",
-  "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，并一键导出 CSS 变量、Tailwind 配置或 JSON。",
+  "version": "0.4.0",
+  "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，一键导出 CSS 变量、Tailwind 配置或 JSON，还能把配色装成 PI-Desktop 主题。",
   "i18n": {
     "en": {
       "name": "Color Picker",
-      "description": "Browse Tailwind, Material and preset palettes plus gradients, pick colors out of images or the clipboard history, generate a scheme with AI, check harmony and text contrast, and export CSS variables, a Tailwind theme or JSON.",
-      "safetyNotes": "Reads only the folder you pick and the host's clipboard history, and only while you are asking it to; AI calls send the color or style description you typed to the model the host owns, and credentials never reach the plugin. No network access of its own, no file writes, no background service."
+      "description": "Browse Tailwind, Material and preset palettes plus gradients, pick colors out of images or the clipboard history, generate a scheme with AI, check harmony and text contrast, export CSS variables, a Tailwind theme or JSON, and install the palette as a PI-Desktop theme.",
+      "safetyNotes": "Reads only the folder you pick and the host's clipboard history, and only while you are asking it to; AI calls send the color or style description you typed to the model the host owns, and credentials never reach the plugin. Installing a theme hands the host one sanitized CSS sheet that restyles the app shell; it is kept in the plugin's own settings and can be removed from the panel. No network access of its own, no file writes, no background service."
     },
     "zh-CN": {
       "name": "色卡选择器",
-      "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，并一键导出 CSS 变量、Tailwind 配置或 JSON。",
-      "safetyNotes": "只在你主动操作时读取你选择的文件夹与宿主剪贴板历史；AI 调用只把你输入的主色或风格描述交给宿主拥有的模型，凭据不会到达插件。插件本身不访问网络、不写入文件、无常驻后台服务。"
+      "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，一键导出 CSS 变量、Tailwind 配置或 JSON，还能把配色装成 PI-Desktop 主题。",
+      "safetyNotes": "只在你主动操作时读取你选择的文件夹与宿主剪贴板历史；AI 调用只把你输入的主色或风格描述交给宿主拥有的模型，凭据不会到达插件。安装主题会把一段经宿主消毒的 CSS 交给宿主来给应用外壳换肤，CSS 存在插件自己的设置里，随时可在面板中卸载。插件本身不访问网络、不写入文件、无常驻后台服务。"
     }
   },
   "author": "catDforD",
@@ -125,6 +125,7 @@
   "permissions": [
     "ui.panel",
     "ui.view",
+    "ui.theme",
     "clipboard.write",
     "clipboard.read",
     "fs.read",

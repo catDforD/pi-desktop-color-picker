@@ -18,8 +18,9 @@
   const exporter = window.PiExport;
   const pick = window.PiPick;
   const ai = window.PiAi;
+  const themeApi = window.PiTheme;
 
-  if (!bridge || !color || !paletteApi || !generate || !contrastApi || !exporter || !pick || !ai) {
+  if (!bridge || !color || !paletteApi || !generate || !contrastApi || !exporter || !pick || !ai || !themeApi) {
     document.body.textContent =
       "Open this panel inside PI-Desktop — the plugin bridge is unavailable here.";
     return;
@@ -91,6 +92,27 @@
       aiUnparsable: "The model answered without a usable palette:",
       aiEmptyOutput: "The model returned no text.",
       aiFailed: "Generation failed",
+      themeTitle: "PI-Desktop theme",
+      themeNote: "Re-skins the app from this color. Undo it in Settings → Theme.",
+      themeBase: "Base",
+      themeBaseDark: "Dark",
+      themeBaseLight: "Light",
+      themeApply: "Generate & apply",
+      themeRegenerate: "Regenerate",
+      themeRestore: "Revert",
+      themeRemove: "Uninstall",
+      themeCopyCss: "Copy CSS",
+      themeBusy: "Applying…",
+      themeApplied: "Applied",
+      themeRestored: "Reverted",
+      themeRemoved: "Uninstalled",
+      themeCssCopied: "Theme CSS copied",
+      themeInstalled: "installed",
+      themeAccent: "accent",
+      themeRestoreNone: "Nothing to revert to yet.",
+      themeUnsupported:
+        "This host build has no runtime theme API (ADR 0260) — update PI-Desktop to use this.",
+      themeFailed: "Theme change failed",
     },
     zh: {
       preview: "当前颜色",
@@ -157,6 +179,26 @@
       aiUnparsable: "模型没有返回可用的配色：",
       aiEmptyOutput: "模型没有返回内容。",
       aiFailed: "生成失败",
+      themeTitle: "PI-Desktop 主题",
+      themeNote: "用当前色给应用换肤，可在 设置 → 通用 → 主题 改回。",
+      themeBase: "底色",
+      themeBaseDark: "深色",
+      themeBaseLight: "浅色",
+      themeApply: "生成并应用",
+      themeRegenerate: "重新生成",
+      themeRestore: "还原",
+      themeRemove: "卸载",
+      themeCopyCss: "复制 CSS",
+      themeBusy: "正在应用…",
+      themeApplied: "已应用",
+      themeRestored: "已还原",
+      themeRemoved: "已卸载",
+      themeCssCopied: "已复制主题 CSS",
+      themeInstalled: "已安装",
+      themeAccent: "强调色",
+      themeRestoreNone: "还没有可还原的主题。",
+      themeUnsupported: "当前宿主缺少运行期主题 API（ADR 0260），需更新 PI-Desktop。",
+      themeFailed: "主题操作失败",
     },
   };
 
@@ -189,6 +231,26 @@
     modelsError: null,
     /** Whether the last `models.list` gave anything to spend. */
     aiUsable: false,
+    /**
+     * Host theme state. The preview is generated here (the same lib/theme.js
+     * the plugin main process uses), but only main can register the theme and
+     * store it, so every mutation goes through `colorPicker.theme`.
+     */
+    themeSupported: true,
+    /** The plugin's own id, from the host; half of every namespaced theme id. */
+    pluginId: "",
+    /** Themes this plugin has registered, from its own store. */
+    themeList: [],
+    /** Where "revert" goes; empty until the first install captured it. */
+    themePrevious: "",
+    /** The active app-wide theme preference, e.g. `plugin:...:pi-theme-dark`. */
+    themePreference: "",
+    /** The base the panel previews and applies. */
+    themeBase: "dark",
+    /** Whether the user picked the base themselves; until then it follows the app. */
+    themeBaseTouched: false,
+    themeBusy: false,
+    themeError: null,
   };
 
   const elements = {
@@ -228,6 +290,14 @@
     aiRun: document.getElementById("ai-run"),
     aiStatus: document.getElementById("ai-status"),
     aiResult: document.getElementById("ai-result"),
+    themeNote: document.getElementById("theme-note"),
+    themeBase: document.getElementById("theme-base"),
+    themePreview: document.getElementById("theme-preview"),
+    themeApply: document.getElementById("theme-apply"),
+    themeRestore: document.getElementById("theme-restore"),
+    themeRemove: document.getElementById("theme-remove"),
+    themeCopy: document.getElementById("theme-copy"),
+    themeStatus: document.getElementById("theme-status"),
   };
 
   function labels() {
@@ -344,6 +414,9 @@
           ? "light"
           : "dark";
     document.documentElement.dataset.base = state.base;
+    // A theme whose base disagrees with the app's own would be previewed against
+    // the wrong plate, so the two follow each other until the user picks one.
+    if (!state.themeBaseTouched) state.themeBase = state.base;
     if (typeof appearance?.locale === "string" && appearance.locale) {
       state.locale = appearance.locale;
     }
@@ -1293,6 +1366,200 @@
     }
   }
 
+  // --- host theme ------------------------------------------------------------
+
+  /** The base being previewed; main derives the same id from it. */
+  function themeBase() {
+    return state.themeBase === "light" ? "light" : "dark";
+  }
+
+  /**
+   * The sheet for the current seed and base, built here so the preview does not
+   * need a round trip. This is the same `lib/theme.js` the plugin main process
+   * generates from, which is what makes the preview honest — the panel never
+   * receives the tokens and re-renders them, it computes them.
+   */
+  function themeSheet() {
+    const base = themeBase();
+    const built = themeApi.buildTheme({ seed: state.hex, base });
+    if (!built) return null;
+    return {
+      base,
+      built,
+      css: themeApi.themeCss({
+        pluginId: state.pluginId,
+        themeId: built.meta.id,
+        tokens: built.tokens,
+      }),
+    };
+  }
+
+  function themeInstalled() {
+    const id = themeApi.themeIdFor(themeBase());
+    return state.themeList.some((entry) => entry.id === id);
+  }
+
+  function renderTheme() {
+    const text = labels();
+    const base = themeBase();
+    const sheet = themeSheet();
+
+    // Rebuild the options only when they are not already right: with
+    // `appearance: base-select` the popup is live DOM, and replacing the nodes
+    // under an open popup closes it. `renderAll` runs on every color change.
+    const choices = [
+      { id: "dark", label: text.themeBaseDark },
+      { id: "light", label: text.themeBaseLight },
+    ];
+    const stale =
+      elements.themeBase.options.length !== choices.length ||
+      choices.some((choice, index) => elements.themeBase.options[index]?.value !== choice.id);
+    if (stale) {
+      elements.themeBase.replaceChildren();
+      for (const choice of choices) {
+        const node = document.createElement("option");
+        node.value = choice.id;
+        node.textContent = choice.label;
+        elements.themeBase.append(node);
+      }
+    }
+    for (const node of elements.themeBase.options) {
+      const match = choices.find((choice) => choice.id === node.value);
+      if (match) node.textContent = match.label;
+    }
+    elements.themeBase.value = base;
+
+    elements.themePreview.replaceChildren();
+    if (sheet) {
+      for (const swatch of themeApi.previewSwatches(sheet.built.tokens, base)) {
+        const chip = document.createElement("span");
+        chip.className = "theme-chip";
+        chip.style.background = swatch.value;
+        chip.title = `${swatch.name} ${swatch.value}`;
+        elements.themePreview.append(chip);
+      }
+    }
+
+    const installed = themeInstalled();
+    const busy = state.themeBusy;
+    // The base picks what the preview shows, and the preview is computed here,
+    // so it stays usable even on a host that cannot register a theme.
+    elements.themeBase.disabled = busy;
+    elements.themeApply.disabled = !state.themeSupported || busy || !sheet;
+    elements.themeApply.textContent = installed ? text.themeRegenerate : text.themeApply;
+    // The sheet names the plugin, and the id only arrives with the first status
+    // round trip; copying before that would produce a sheet for nobody.
+    elements.themeCopy.disabled = !sheet || busy || !state.pluginId;
+    elements.themeRemove.disabled = !state.themeSupported || busy || !installed;
+    elements.themeRestore.disabled = !state.themeSupported || busy || !state.themePrevious;
+    elements.themeRestore.title = state.themePrevious || text.themeRestoreNone;
+    // The reason sits above the controls it disables, not two lines below them.
+    elements.themeNote.textContent = state.themeSupported ? text.themeNote : text.themeUnsupported;
+    // The accent's contrast explains why a seed this light/dark still reads,
+    // which is worth keeping one hover away rather than always on screen. Set
+    // before the early returns so it can never go stale against the chosen base.
+    const label = themeApi.themeLabel({ seed: state.hex, base, locale: state.locale });
+    elements.themeStatus.title = sheet
+      ? `${label} · ${text.themeAccent} ${sheet.built.meta.accentRatio.toFixed(1)}:1`
+      : label;
+
+    if (!state.themeSupported) {
+      elements.themeStatus.textContent = "";
+      return;
+    }
+    if (busy) {
+      elements.themeStatus.textContent = text.themeBusy;
+      return;
+    }
+    if (state.themeError) {
+      // A permission refusal already names the missing permission and the
+      // remedy; prefixing it with "theme failed" would just say it twice.
+      elements.themeStatus.textContent = state.themeError.startsWith(text.permissionMissing)
+        ? state.themeError
+        : `${text.themeFailed}: ${clipMessage(state.themeError)}`;
+      return;
+    }
+    if (!sheet) {
+      elements.themeStatus.textContent = "";
+      return;
+    }
+    const active = state.themePreference === `plugin:${state.pluginId}:${sheet.built.meta.id}`;
+    // The button already says whether this base is installed, so the line only
+    // adds what it cannot: the name, and whether the app is on it right now.
+    const parts = [label];
+    if (installed) parts.push(active ? text.themeApplied : text.themeInstalled);
+    elements.themeStatus.textContent = parts.join(" · ");
+  }
+
+  async function loadThemeStatus() {
+    try {
+      const response = await bridge.invoke("colorPicker.theme", { action: "status" });
+      if (response?.ok) {
+        state.themeSupported = response.supported !== false;
+        state.themeList = Array.isArray(response.themes) ? response.themes : [];
+        state.themePrevious = typeof response.previousTheme === "string" ? response.previousTheme : "";
+        state.themePreference = typeof response.preference === "string" ? response.preference : "";
+        if (typeof response.pluginId === "string" && response.pluginId) state.pluginId = response.pluginId;
+        state.themeError = null;
+      } else {
+        state.themeError = response?.message || response?.code || "UNKNOWN";
+      }
+    } catch (error) {
+      state.themeSupported = false;
+      state.themeError = describeFailure(error);
+    }
+    renderTheme();
+  }
+
+  async function runTheme(action) {
+    if (state.themeBusy) return;
+    state.themeBusy = true;
+    state.themeError = null;
+    renderTheme();
+    try {
+      const response = await bridge.invoke("colorPicker.theme", {
+        action,
+        base: themeBase(),
+        seed: state.hex,
+      });
+      if (!response?.ok) {
+        // `ui.theme` is new here, so "missing permission: ui.theme" is the first
+        // refusal a user is likely to see — and the one with a remedy.
+        state.themeError = /missing permission:/i.test(String(response?.message || ""))
+          ? describeFailure({ message: response.message })
+          : response?.message || response?.code || "UNKNOWN";
+      } else if (action === "apply") {
+        state.themeList = [
+          ...state.themeList.filter((entry) => entry.id !== response.id),
+          { id: response.id, label: response.label, base: response.base, seed: response.seed },
+        ];
+        state.themePrevious = response.previousTheme || state.themePrevious;
+        state.themePreference = `plugin:${state.pluginId}:${response.id}`;
+        // The host's idea of the current theme is now ours; the panel only
+        // offers the base, so adopt whatever main actually used.
+        state.themeBase = response.base === "light" ? "light" : "dark";
+        if (response.persisted === false) {
+          state.themeError = `not stored (${response.warning || "unknown"})`;
+        } else {
+          await toast(`${labels().themeApplied} · ${response.label}`);
+        }
+      } else if (action === "restore") {
+        state.themePreference = response.theme || "";
+        await toast(`${labels().themeRestored} · ${response.theme}`);
+        if (response.fellBack) await toast(clipMessage(response.message || ""), "warn");
+      } else if (action === "remove") {
+        state.themeList = state.themeList.filter((entry) => entry.id !== response.id);
+        if (response.restored) state.themePreference = response.restored;
+        await toast(labels().themeRemoved);
+      }
+    } catch (error) {
+      state.themeError = describeFailure(error);
+    } finally {
+      state.themeBusy = false;
+      renderTheme();
+    }
+  }
+
   // --- wiring ----------------------------------------------------------------
 
   function renderAll() {
@@ -1307,6 +1574,7 @@
     renderSelection();
     renderAiModel();
     renderAiResult();
+    renderTheme();
     if (!elements.pickOverlay.hidden) renderPickOverlay();
   }
 
@@ -1360,8 +1628,20 @@
         );
     });
 
-    elements.pickOpen.addEventListener("click", openPickOverlay);
-    elements.pickClose.addEventListener("click", closePickOverlay);
+    elements.themeBase.addEventListener("change", () => {
+      state.themeBase = elements.themeBase.value === "light" ? "light" : "dark";
+      state.themeBaseTouched = true;
+      renderTheme();
+    });
+    elements.themeApply.addEventListener("click", () => void runTheme("apply"));
+    elements.themeRestore.addEventListener("click", () => void runTheme("restore"));
+    elements.themeRemove.addEventListener("click", () => void runTheme("remove"));
+    elements.themeCopy.addEventListener("click", () => {
+      const sheet = themeSheet();
+      if (sheet) void copy(sheet.css);
+    });
+
+    elements.pickOpen.addEventListener("click", openPickOverlay);    elements.pickClose.addEventListener("click", closePickOverlay);
     elements.pickFolder.addEventListener("click", () => void pickChooseFolder());
     elements.pickUse.addEventListener("click", pickApply);
     elements.pickCanvas.addEventListener("pointermove", (event) =>
@@ -1404,7 +1684,10 @@
 
     // Panels are not notified when settings change, so refresh when we are shown.
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) void readSettings();
+      if (!document.hidden) {
+        void readSettings();
+        void loadThemeStatus();
+      }
     });
   }
 
@@ -1418,4 +1701,5 @@
     .then(applyAppearance)
     .catch(() => applyAppearance(null));
   void readSettings().then(loadModels);
+  void loadThemeStatus();
 })();

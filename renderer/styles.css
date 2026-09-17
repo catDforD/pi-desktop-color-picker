@@ -398,7 +398,7 @@ input[type="color"]::-webkit-color-swatch {
   text-decoration-style: dotted;
 }
 
-.link-button:hover {
+.link-button:not(:disabled):hover {
   color: var(--fg);
 }
 
@@ -588,11 +588,14 @@ input[type="color"]::-webkit-color-swatch {
   margin-top: 6px;
   padding: 4px;
   min-width: anchor-size(width);
-  border: 1px solid var(--border);
+  /* A floating layer needs an edge of its own: `--border` is tuned for
+     partitions inside a surface, and a 16% shadow is invisible on #181818, so
+     the popup read as text floating over text rather than as a panel above it. */
+  border: 1px solid color-mix(in oklab, var(--fg) 16%, transparent);
   border-radius: 10px;
   background: var(--surface);
   color: var(--fg);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 16%);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 38%);
 }
 
 /* Block, not flex: the checkmark that needed aligning is hidden, and a flex
@@ -651,7 +654,7 @@ input[type="color"]::-webkit-color-swatch {
   cursor: pointer;
 }
 
-.action:hover {
+.action:not(:disabled):hover {
   background: var(--surface-hover);
 }
 
@@ -925,4 +928,75 @@ input[type="color"]::-webkit-color-swatch {
   font-size: 11px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+/* The panel paints its own surfaces and text, which overrides the UA's grey
+   text on a disabled control — without a rule of our own, a dead select or
+   button looks exactly like a live one. */
+.action:disabled,
+.link-button:disabled,
+.field select:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* --- host theme ----------------------------------------------------------- */
+
+/* The note and the status line both carry host-generated text (a theme label, a
+   refusal message), which must not be able to widen the panel. */
+#theme-note,
+.theme-status {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Left-aligned pair, unlike the export fields: this row is the label for the
+   swatch strip under it, not a value at the far end of a line. */
+.theme-field {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* The strip does not need the pinned width the export fields use to stop the
+   control jumping between labels — its own two labels are the same length. */
+.theme-field select {
+  min-width: 0;
+}
+
+/* Its own row, directly under the base select: a popup overlaps whatever sits
+   below the control, and covering swatches reads far better than covering the
+   first half of a button label. */
+.theme-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.theme-chip {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.theme-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.theme-actions .action {
+  flex: none;
+}
+
+.theme-status {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.theme-status:empty,
+#theme-note:empty {
+  display: none;
 }
