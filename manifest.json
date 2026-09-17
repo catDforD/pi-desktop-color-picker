@@ -136,7 +136,7 @@
     "models.list"
   ],
   "engines": {
-    "piDesktop": ">=0.9.0"
+    "piDesktop": ">=0.13.11"
   },
   "activationEvents": ["onCommand:color-picker.open", "onStartup"]
 }
