@@ -510,6 +510,84 @@ input[type="color"]::-webkit-color-swatch {
   font-size: 12px;
 }
 
+/* A native select popup is a UA surface and its options have no boxes in the
+   page, so no rule here can reach them. `appearance: base-select` (Chromium
+   135+) hands the popup to the page: the options become real elements and the
+   rules below apply. Older engines drop the value and these selectors, which
+   leaves the stock popup — the panel just looks as it did before. */
+.field select,
+.field select::picker(select) {
+  appearance: base-select;
+}
+
+/* base-select sizes the control to the selected label, so it would jump on
+   every change (87px for "CSS 变量", 136.6px for "Tailwind v4 @theme" — the
+   widest label in both languages), and lays it out a hair taller. Pin both
+   back to the shape the native control had. */
+.field select {
+  min-width: 12.5em;
+  line-height: 1.34;
+}
+
+/* base-select swaps the control's chevron for a UA triangle; rebuild the thin
+   one. currentColor lets a single rule serve both themes. */
+.field select::picker-icon {
+  width: 9px;
+  height: 9px;
+  margin-inline-start: auto;
+  background: currentColor;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 7 7-7'/></svg>") center / contain no-repeat;
+  transition: rotate 160ms ease;
+}
+
+.field select:open::picker-icon {
+  rotate: 180deg;
+}
+
+.field select::picker(select) {
+  /* Chrome opens the picker above the control, and no fallback list changes
+     that — flip-block lands above even with room below — so ask for block-end
+     and turn the fallbacks off. Cost of that: a window shorter than this
+     panel's declared height can let an unscrolled picker run past the bottom
+     edge instead of flipping. The code preview below it has the same shape. */
+  position-area: block-end;
+  position-try-fallbacks: none;
+  margin-top: 6px;
+  padding: 4px;
+  min-width: anchor-size(width);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 16%);
+}
+
+.field select option {
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 12px;
+}
+
+/* The UA checkmark pushes the first label out of line with the others; the
+   selected row carries the panel's own selected treatment instead. */
+.field select option::checkmark {
+  display: none;
+}
+
+.field select option:checked {
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  font-weight: 560;
+}
+
+.field select option:hover,
+.field select option:focus-visible {
+  background: color-mix(in oklab, var(--accent) 9%, transparent);
+}
+
 .code {
   margin: 0;
   max-height: 240px;
