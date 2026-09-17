@@ -233,13 +233,20 @@
 
   // --- DOM helpers -----------------------------------------------------------
 
-  /** A clickable color chip; `onPick` receives the color entry. */
+  /**
+   * A clickable color chip; `onPick` receives the color entry. The selection
+   * ring's two strokes are coloured here because only the fill knows which one
+   * will read against it — see `.swatch[aria-pressed]` in styles.css.
+   */
   function swatch(item, onPick) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "swatch";
     button.style.background = item.hex;
     button.dataset.hex = item.hex;
+    const ringInner = contrastApi.bestText(item.hex) || "#000000";
+    button.style.setProperty("--ring-inner", ringInner);
+    button.style.setProperty("--ring-outer", ringInner === "#000000" ? "#ffffff" : "#000000");
     button.title = item.label ? `${item.label} · ${item.hex}` : item.hex;
     button.setAttribute("aria-label", button.title);
     button.addEventListener("click", () => onPick(item));

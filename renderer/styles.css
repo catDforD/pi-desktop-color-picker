@@ -363,9 +363,14 @@ input[type="color"]::-webkit-color-swatch {
   outline-offset: 2px;
 }
 
+/* Selection is two 1px strokes — the chip's own border plus a ring outside it —
+   coloured per chip from its fill by `swatch()`: the inner one is whichever of
+   black/white reads better on the fill, the outer is its opposite. One of the
+   two therefore always contrasts, which a single fixed colour cannot manage
+   across pale and dark chips. */
 .swatch[aria-pressed="true"] {
-  border-color: var(--fg);
-  box-shadow: 0 0 0 1px var(--fg);
+  border-color: var(--ring-inner);
+  box-shadow: 0 0 0 1px var(--ring-outer);
 }
 
 .link-button {
