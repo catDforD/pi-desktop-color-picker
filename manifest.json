@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.catdford.color-picker",
   "name": "色卡选择器",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "在工作面板里浏览 Tailwind / Material / 预设色板与渐变，从图片或剪贴板取色，用 AI 生成配色，检查对比度与色盲模拟，一键导出 CSS 变量、Tailwind 配置或 JSON，还能把配色装成 PI-Desktop 主题。",
   "i18n": {
     "en": {
@@ -60,6 +60,13 @@
           "颜色"
         ],
         "category": "Design"
+      }
+    ],
+    "globalShortcuts": [
+      {
+        "id": "color-picker.open",
+        "command": "color-picker.open",
+        "default": "Alt+Shift+C"
       }
     ],
     "settings": [
@@ -122,13 +129,14 @@
     "clipboard.write",
     "clipboard.read",
     "fs.read",
+    "keyboard.globalShortcut",
     "agent.complete",
     "agent.tool.register",
     "agent.prompt.inject",
     "models.list"
   ],
   "engines": {
-    "piDesktop": ">=0.13.11"
+    "piDesktop": ">=0.14.9"
   },
   "activationEvents": ["onCommand:color-picker.open", "onStartup"]
 }

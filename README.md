@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| 版本 | 0.4.0(尚未上架) |
+| 版本 | 0.4.2(开发版) |
 | 插件 id | `io.github.catdford.color-picker` |
 | 宿主 | 主题依赖宿主较晚开放的能力,详见[已知限制](./docs/permissions.md#已知限制) |
 | 许可 | MIT |
@@ -62,7 +62,7 @@
 
 ## 打开面板
 
-命令面板里的「Color Picker: Open」随时可以打开它。**系统级快捷键还没进这个版本**:`Alt+Shift+C` 需要宿主的 `keyboard.globalShortcut` 权限,而它至今没有出现在任何发布版里——宿主一发布就会补上,代码与决策记在 [PLAN.md](./PLAN.md)。
+命令面板里的「Color Picker: Open」随时可以打开它。插件也注册了系统级快捷键 **`Alt+Shift+C`**；如果该组合键已被占用，会依次尝试 `Ctrl+Alt+C` 和 `Alt+Shift+P`，结果可在宿主日志中看到。首次安装或升级后，需要在插件权限提示中授予 `keyboard.globalShortcut`。
 
 ## 安装
 
@@ -104,7 +104,7 @@ node <PI-Desktop>/packages/plugin-devkit/dist/cli.js check .     # 打包前校�
 
 ## English
 
-A color picker and palette tool for PI-Desktop. Browse the full Tailwind v4 and Material palettes plus presets and gradients, copy any color as HEX / RGB / HSL / OKLCH, pick colors out of an image or a pasted screenshot with a pixel loupe, generate harmony schemes, 50–950 scales or an AI palette from a style description, check WCAG contrast and color-blindness simulation, and export CSS variables, a Tailwind theme or JSON. The current color can also become a PI-Desktop theme in one click. A `suggest_palette` tool plus skill let the agent ask for a palette directly. A global shortcut is not part of this build yet — it needs a host permission that has not shipped in a release. Not published to the marketplace yet; see [PLAN.md](./PLAN.md).
+A color picker and palette tool for PI-Desktop. Browse the full Tailwind v4 and Material palettes plus presets and gradients, copy any color as HEX / RGB / HSL / OKLCH, pick colors out of an image or a pasted screenshot with a pixel loupe, generate harmony schemes, 50–950 scales or an AI palette from a style description, check WCAG contrast and color-blindness simulation, and export CSS variables, a Tailwind theme or JSON. The current color can also become a PI-Desktop theme in one click. A `suggest_palette` tool plus skill let the agent ask for a palette directly. A global shortcut (`Alt+Shift+C`, with conflict fallbacks) opens the panel from anywhere. It requires the `keyboard.globalShortcut` permission. Not published to the marketplace yet; see [PLAN.md](./PLAN.md).
 
 ## License
 

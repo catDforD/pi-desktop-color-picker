@@ -20,7 +20,7 @@ const PALETTE = JSON.stringify({
 
 /** A host stub; each test overrides only what it cares about. */
 function fakeHost(overrides = {}) {
-  const calls = { completed: [], settings: [], tools: [], upserts: [], removals: [], setThemes: [] };
+  const calls = { registered: [], completed: [], settings: [], tools: [], upserts: [], removals: [], setThemes: [] };
   // The host remembers the active theme preference across calls, so a test can
   // follow what `apply` and `restore` do to it. Settings persist the same way,
   // because a second apply has to read back what the first one stored.
@@ -31,6 +31,12 @@ function fakeHost(overrides = {}) {
     commands: {
       register: async () => {},
       unregister: async () => {},
+    },
+    keyboard: {
+      registerGlobalShortcut: async (input) => {
+        calls.registered.push(input);
+        return { ...input, registered: true };
+      },
     },
     app: {
       getLocale: async () => "zh-CN",
@@ -81,17 +87,47 @@ function fakeHost(overrides = {}) {
 
 const plugin = require("../main.js");
 
-test("onLoad registers the agent tool and the command", async () => {
-  const host = fakeHost();
+test("onLoad registers the command, a shortcut and the agent tool", async () => {
+  // The first accelerator is taken by something else: the plugin must ask for
+  // the next one instead of giving up.
+  const host = fakeHost({
+    keyboard: {
+      registerGlobalShortcut: async (input) => {
+        host.calls.registered.push(input);
+        if (input.accelerator === "Alt+Shift+C") {
+          return { ...input, registered: false, error: "SHORTCUT_CONFLICT" };
+        }
+        return { ...input, registered: true };
+      },
+    },
+  });
   await plugin.onLoad();
 
-  // Nothing here registers an accelerator: `keyboard.globalShortcut` is not
-  // declared, and the fake host has no keyboard API to catch a stray call.
+  assert.deepEqual(
+    host.calls.registered.map((entry) => entry.accelerator),
+    ["Alt+Shift+C", "Ctrl+Alt+C"],
+  );
+  for (const entry of host.calls.registered) assert.equal(entry.command, "color-picker.open");
   assert.equal(host.calls.tools.length, 1);
   assert.equal(host.calls.tools[0].name, "suggest_palette");
   assert.equal(host.calls.tools[0].risk, "low");
   assert.equal(typeof host.calls.tools[0].execute, "function");
   assert.deepEqual(Object.keys(host.calls.tools[0].schema.properties), ["base", "style", "count"]);
+});
+
+test("a thrown shortcut error is caught, not fatal", async () => {
+  const host = fakeHost({
+    keyboard: {
+      registerGlobalShortcut: async (input) => {
+        host.calls.registered.push(input);
+        const error = new Error("no shortcut registry in this host");
+        error.code = "UNSUPPORTED";
+        throw error;
+      },
+    },
+  });
+  await plugin.onLoad();
+  assert.equal(host.calls.registered.length, 3);
 });
 
 test("ai.suggest returns the parsed palette in an ok envelope", async () => {

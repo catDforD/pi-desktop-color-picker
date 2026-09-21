@@ -92,12 +92,14 @@
 
 **0.4.1 处理(2026-09-17):该功能已从 manifest 移除。** 插件中心的权限目录是按发布版对齐的:`ui.theme` 因为 v0.10.0 就有所以放行,而 `keyboard.globalShortcut` 随 PR #409 落地于 9-15、至今没进任何发布版,于是被判为未知权限(MAN013)并阻断提交。更要紧的是同一件事的另一面:**任何可安装的宿主都给不出这个权限**,所以市场用户拿到的会是一个在 100% 目标环境里都不可用的功能。0.4.1 因此移除了权限声明、`contributes.globalShortcuts` 与 `main.js` 里的注册代码;命令面板打开面板的路径不受影响。
 
-**恢复步骤(宿主发布 PR #409 之后)**:
-1. `manifest.json`:加回 `keyboard.globalShortcut` 权限与 `contributes.globalShortcuts` 块(写法见 commit `3005ade`)。
-2. `main.js`:`git show v0.4.0:main.js` 取回 `SHORTCUT_CANDIDATES`、`registerGlobalShortcut()` 与 `onLoad` 里的那一行调用。
-3. `tests/plugin-main.test.js`:`git show v0.4.0:tests/plugin-main.test.js` 取回两条快捷键用例与假宿主的 keyboard 桩。
-4. 文档:把 README 的「打开面板」、`docs/permissions.md` 的权限表与限制、TESTING 第 1 节改回快捷键口径。
-5. 版本升位(then re-pack and re-submit)。
+**0.4.2 恢复(2026-09-21):宿主 v0.14.9 已发布该能力,插件已恢复权限、声明、运行时注册与冲突降级,最低宿主版本调整为 `>=0.14.9`。**
+
+恢复步骤（已由 0.4.2 完成）:
+1. `manifest.json` 恢复 `keyboard.globalShortcut` 权限与 `contributes.globalShortcuts`。
+2. `main.js` 恢复显式注册、冲突降级与日志。
+3. `tests/plugin-main.test.js` 恢复成功、冲突和宿主不支持用例。
+4. README、权限说明与真机验收清单同步更新。
+5. 版本升至 0.4.2；重新加载或安装时必须授予新增权限。
 
 - `manifest.json`:id / name / i18n(必须同时含 `en` 与 `zh-CN`)/ `main` / `engines.piDesktop`
 - `contributes.views` 工作面板视图;`contributes.commands` 命令;`contributes.globalShortcuts` 全局快捷键;`contributes.settings` 设置项

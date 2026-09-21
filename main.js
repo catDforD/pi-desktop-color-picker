@@ -55,25 +55,59 @@ const TOOL_SCHEMA = {
 
 const PANEL_TITLE = { en: "Color Picker", "zh-CN": "色卡选择器" };
 
+/**
+ * Accelerators to try in order. The host owns Electron's globalShortcut and a
+ * refusal is an answer rather than an exception (`{ registered: false, error }`),
+ * so a chord another plugin or the OS already holds costs the user a preferred
+ * shortcut, not the feature.
+ */
+const SHORTCUT_CANDIDATES = ["Alt+Shift+C", "Ctrl+Alt+C", "Alt+Shift+P"];
+
 let locale = "en";
 
-/*
- * There is no global shortcut in this build.
- *
- * `Alt+Shift+C` needs `keyboard.globalShortcut` plus a `contributes.globalShortcuts`
- * entry, and that permission arrived with PI-Desktop PR #409 — it is in no release
- * yet, so the plugin center's permission catalog does not know it and refuses the
- * package (MAN013), and no installable host could grant it either. Rather than
- * declare a permission nothing can honour, the feature ships when the host does;
- * PLAN.md records what to restore, and `git show v0.4.0:main.js` has the code.
- * Opening the panel from the command palette is unaffected.
+/**
+ * The manifest's `default` is registered by the host right after `onLoad`;
+ * registering the same id and accelerator here is equivalent and gives us the
+ * refusal code to report. If this call falls back to another accelerator, the
+ * host's later attempt on the declared default fails its conflict check before
+ * releasing the previous entry, so the fallback binding survives.
  */
+async function registerGlobalShortcut() {
+  const keyboard = pi.keyboard;
+  if (!keyboard?.registerGlobalShortcut) return;
+  for (const accelerator of SHORTCUT_CANDIDATES) {
+    try {
+      const result = await keyboard.registerGlobalShortcut({
+        id: COMMAND_ID,
+        accelerator,
+        command: COMMAND_ID,
+      });
+      if (result?.registered) {
+        if (accelerator !== SHORTCUT_CANDIDATES[0]) {
+          console.warn(
+            `[color-picker] ${SHORTCUT_CANDIDATES[0]} was refused, using ${accelerator}`,
+          );
+        }
+        return;
+      }
+      console.warn(
+        `[color-picker] shortcut ${accelerator} refused: ${result?.error || "UNKNOWN"}`,
+      );
+    } catch (error) {
+      // PERMISSION_DENIED, INVALID_ARGUMENT and UNSUPPORTED are thrown, not returned.
+      console.warn(
+        `[color-picker] shortcut ${accelerator} failed: ${error?.code || error?.message || error}`,
+      );
+    }
+  }
+  console.warn("[color-picker] no global shortcut could be registered");
+}
 
 /**
  * A contributed view cannot be opened from a command — there is no `openView`
  * API, and `pi.ui` only exposes openPanel / closePanel. The detached panel is
- * therefore the surface a command can bring up; both surfaces render the same
- * renderer/index.html.
+ * therefore the surface a command (and the global shortcut) can bring up; both
+ * surfaces render the same renderer/index.html.
  */
 async function openPanel() {
   const title = String(locale || "").toLowerCase().startsWith("zh")
@@ -440,6 +474,7 @@ async function onLoad() {
     category: "Design",
     run: () => openPanel(),
   });
+  await registerGlobalShortcut();
   await registerPaletteTool();
   await restoreThemes();
 }
@@ -450,6 +485,8 @@ async function onUnload() {
   } catch (error) {
     console.warn(`[color-picker] commands.unregister failed: ${error?.message || error}`);
   }
+  // No unregisterGlobalShortcut here: the host releases every accelerator the
+  // plugin owns on unload, disable and crash.
 }
 
 module.exports = { onLoad, onUnload, onPanelInvoke };
